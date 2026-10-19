@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Dream Archive — encyclopedia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Noto+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #0c0a10; --panel: #15121c; --panel2: #1d1926; --ink: #ebe6f2; --dim: #9a93aa; --line: #2e2838; --gold: #f0c860; --violet: #b48cff; --red: #e0607a; --green: #6cd08a; --blue: #7ab0f0;
+  --d0: #c8c0d8; --d1: #8ad0a0; --d2: #7ab0f0; --d3: #e8b860; --d4: #e07a9a; --d5: #b48cff; --d6: #30ff60; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 'Pixelify Sans', 'Noto Sans KR', 'Courier New', monospace; }
+a { color: var(--gold); cursor: pointer; text-decoration: none; } a:hover { text-decoration: underline; }
+header { position: sticky; top: 0; z-index: 20; background: linear-gradient(#0c0a10, #0c0a10ee); border-bottom: 2px solid var(--line); padding: 10px 16px 0; }
+.top { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+h1 { font-size: 20px; margin: 0; letter-spacing: 2px; font-weight: 600; } h1 span { color: var(--violet); }
+.counts { color: var(--dim); font-size: 13px; }
+.ctrl { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+input[type=search], select { background: var(--panel); color: var(--ink); border: 2px solid var(--line); padding: 5px 8px; font: inherit; border-radius: 0; min-width: 0; }
+input[type=search] { width: 220px; max-width: 60vw; }
+label.tog { display: inline-flex; gap: 6px; align-items: center; color: var(--dim); font-size: 13px; cursor: pointer; }
+nav { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 10px; }
+nav button { background: none; border: 2px solid transparent; border-bottom: none; color: var(--dim); font: inherit; padding: 6px 12px; cursor: pointer; }
+nav button.on { color: var(--ink); background: var(--panel); border-color: var(--line); }
+main { padding: 16px; max-width: 1400px; margin: 0 auto; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip { border: 2px solid var(--line); background: var(--panel); color: var(--dim); padding: 2px 8px; cursor: pointer; font: inherit; font-size: 13px; }
+.chip.on { color: var(--bg); background: var(--gold); border-color: var(--gold); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.card { background: var(--panel); border: 2px solid var(--line); padding: 10px 12px; cursor: pointer; position: relative; }
+.card:hover { border-color: var(--violet); }
+.card h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+.card .meta { color: var(--dim); font-size: 12px; }
+.card p { margin: 6px 0 0; font-size: 13px; color: #cfc8dc; }
+.dep { display: inline-block; min-width: 22px; text-align: center; color: var(--bg); font-size: 12px; padding: 0 4px; margin-right: 6px; }
+.d0 { background: var(--d0); } .d1 { background: var(--d1); } .d2 { background: var(--d2); } .d3 { background: var(--d3); } .d4 { background: var(--d4); } .d5 { background: var(--d5); } .d6 { background: var(--d6); }
+.tag { display: inline-block; font-size: 11px; border: 1px solid var(--line); color: var(--dim); padding: 0 5px; margin: 2px 4px 0 0; }
+.tag.gold { color: var(--gold); border-color: #6a5a30; } .tag.vio { color: var(--violet); border-color: #4a3a6a; } .tag.red { color: var(--red); border-color: #6a2a3a; }
+.unknown { opacity: 0.45; }
+#detail { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%); background: var(--panel2); border-left: 2px solid var(--line); z-index: 40; overflow-y: auto; padding: 16px 18px 40px; transform: translateX(100%); transition: transform .18s; }
+#detail.open { transform: none; }
+#detail .close { position: sticky; top: 0; float: right; background: var(--panel); border: 2px solid var(--line); color: var(--ink); font: inherit; cursor: pointer; padding: 2px 10px; }
+#detail h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+#detail h4 { margin: 16px 0 4px; color: var(--gold); font-weight: 600; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
+#detail ul { margin: 4px 0; padding-left: 18px; } #detail li { margin: 2px 0; }
+canvas.thumb { image-rendering: pixelated; display: block; margin: 10px 0; max-width: 100%; border: 2px solid var(--line); background: #000; }
+.spoil { position: relative; }
+.spoil.hid > .sp-body { filter: blur(6px); user-select: none; pointer-events: none; }
+.spoil.hid > .sp-btn { display: inline-block; }
+.sp-btn { display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; background: var(--bg); border: 2px solid var(--violet); color: var(--violet); font: inherit; font-size: 12px; padding: 2px 10px; cursor: pointer; }
+.lineq { color: #d8d0e6; font-style: italic; }
+.small { font-size: 12px; color: var(--dim); }
+.edge-row { padding: 3px 0; border-bottom: 1px dotted #ffffff14; font-size: 13px; }
+.edge-row .why { color: var(--dim); }
+#mapwrap { position: relative; height: calc(100vh - 150px); min-height: 420px; border: 2px solid var(--line); background: #08060c; overflow: hidden; cursor: grab; touch-action: none; }
+#mapwrap.drag { cursor: grabbing; }
+#map { width: 100%; height: 100%; }
+#map text { font: 11px 'Pixelify Sans', monospace; fill: #cfc8dc; pointer-events: none; }
+#map .n circle { stroke: #000; stroke-width: 1.5; cursor: pointer; }
+#map .n.dim, #map .e.dim { opacity: 0.08; }
+#map .e { fill: none; stroke-width: 1.2; opacity: 0.5; }
+#map .e.door { stroke: #8a84a0; } #map .e.cond { stroke: #e8b860; stroke-dasharray: 4 3; } #map .e.secret { stroke: #b48cff; stroke-dasharray: 2 3; }
+#map .e.real { stroke: #f0e060; stroke-width: 2; } #map .e.spawn { stroke: #6cd08a; stroke-dasharray: 1 4; } #map .e.fall { stroke: #e0607a; } #map .e.debug { stroke: #30ff60; stroke-dasharray: 6 2; }
+#map .colhead { font-size: 14px; fill: var(--gold); }
+.maptools { position: absolute; top: 8px; left: 8px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 3; }
+.maptools button { background: var(--panel); border: 2px solid var(--line); color: var(--ink); font: inherit; font-size: 12px; cursor: pointer; padding: 2px 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--dim); margin-top: 8px; }
+.legend i { display: inline-block; width: 26px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; } td, th { border-bottom: 1px solid var(--line); padding: 5px 6px; text-align: left; vertical-align: top; } th { color: var(--gold); font-weight: 600; }
+.glyph { display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; background: var(--bg); border: 2px solid var(--line); margin-right: 8px; font-weight: 600; float: left; }
+.empty { color: var(--dim); padding: 30px; text-align: center; }
+.intro { color: var(--dim); max-width: 900px; }
+.stage { padding: 3px 0 3px 10px; border-left: 2px solid var(--line); margin: 3px 0; font-size: 13px; }
+.stage.end { border-left-color: var(--gold); }
+footer { color: var(--dim); font-size: 12px; text-align: center; padding: 30px 16px; }
+@media (max-width: 640px) { .ctrl { margin-left: 0; } input[type=search] { width: 100%; max-width: none; } header { padding: 8px 12px 0; } main { padding: 12px; } #mapwrap { height: 70vh; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>THE DREAM <span>ARCHIVE</span></h1>
+    <div class="counts" id="counts"></div>
+    <div class="ctrl">
+      <input type="search" id="q" placeholder="Search for a place, an effect, someone…" aria-label="Search">
+      <select id="spoil" aria-label="Spoiler level">
+        <option value="0">No spoilers</option>
+        <option value="1">Rules and uses</option>
+        <option value="2">Secrets, lore, arcs</option>
+        <option value="3">Everything (endings included)</option>
+      </select>
+      <label class="tog" title="Show only what you have already seen in your game (reads this browser’s save)"><input type="checkbox" id="mine"> My archive</label>
+    </div>
+  </div>
+  <nav id="tabs"></nav>
+</header>
+<main id="main"></main>
+<aside id="detail" aria-live="polite"></aside>
+<footer>Generated from the game data — <span id="built"></span>. Nothing here is said in the game.</footer>
+<script>
+var D = /*__DATA__*/null;
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+  var norm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+  var WB = {}; D.worlds.forEach(function (w) { WB[w.id] = w; });
+  var EB = {}; D.effects.forEach(function (e) { EB[e.id] = e; });
+  var NB = {}; D.npcs.forEach(function (n) { NB[n.id] = n; });
+  var OUT = {}, IN = {}; D.edges.forEach(function (e) { (OUT[e.from] = OUT[e.from] || []).push(e); (IN[e.to] = IN[e.to] || []).push(e); });
+  var TIER = { hub: 'refuge', easy: 'easy', mid: 'medium', hard: 'hard', extreme: 'extreme' };
+  var st = { tab: 'worlds', spoil: 0, q: '', mine: false, f: {} };
+  try { var sv = JSON.parse(localStorage.getItem('yn_wiki_prefs') || '{}'); if (sv.spoil !== undefined) st.spoil = sv.spoil; if (sv.tab) st.tab = sv.tab; } catch (e) { }
+  var save = function () { try { localStorage.setItem('yn_wiki_prefs', JSON.stringify({ spoil: st.spoil, tab: st.tab })); } catch (e) { } };
+
+  /* ---- la partie de ce navigateur (lecture seule) ---- */
+  var mine = null;
+  try { var box = JSON.parse(localStorage.getItem('yn_dream_archive_save') || 'null'); if (box && box.payload) { var p = JSON.parse(box.payload); mine = { worlds: p.worlds || {}, effects: p.effects || [], npcs: p.npcs || {}, quests: p.quests || {}, endings: p.endings || [] }; } } catch (e) { mine = null; }
+  var seenW = function (id) { return !st.mine || !mine || !/^W/.test(id) || !!mine.worlds[id]; };
+  var seenE = function (id) { return !st.mine || !mine || mine.effects.indexOf(id) >= 0; };
+  var seenN = function (id) { return !st.mine || !mine || !!mine.npcs[id]; };
+
+  /* ---- spoilers ---- */
+  var sp = function (lvl, html) { if (!html) return ''; return '<div class="spoil' + (st.spoil >= lvl ? '' : ' hid') + '"><button class="sp-btn" type="button">reveal</button><div class="sp-body">' + html + '</div></div>'; };
+  document.addEventListener('click', function (ev) { var b = ev.target.closest('.sp-btn'); if (b) { b.parentNode.classList.remove('hid'); ev.stopPropagation(); } });
+
+  var TABS = [['worlds', 'Worlds'], ['map', 'Map'], ['effects', 'Effects'], ['people', 'Inhabitants'], ['threads', 'Threads'], ['endings', 'Endings'], ['witches', 'Witches'], ['howto', 'How to read']];
+  if (!TABS.some(function (t) { return t[0] === st.tab; })) st.tab = 'worlds'; // onglet mémorisé d'une ancienne version
+  function renderTabs() { $('#tabs').innerHTML = TABS.map(function (t) { return '<button type="button" data-t="' + t[0] + '" class="' + (st.tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join(''); }
+  $('#tabs').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; st.tab = b.dataset.t; save(); render(); });
+  $('#q').addEventListener('input', function () { st.q = norm(this.value); render(); });
+  $('#spoil').value = String(st.spoil); $('#spoil').addEventListener('change', function () { st.spoil = +this.value; save(); render(); if (cur) openWorld(cur, true); });
+  $('#mine').disabled = !mine; if (!mine) $('#mine').parentNode.title = 'No game found in this browser (the wiki must be opened from the same server as the game).';
+  $('#mine').addEventListener('change', function () { st.mine = this.checked; render(); });
+  var c = D.counts; $('#counts').textContent = c.worlds + ' worlds · ' + c.effects + ' effects · ' + c.entities + ' inhabitants · ' + (D.quests.length) + ' arcs';
+  $('#built').textContent = D.built;
+
+  var match = function (s) { return !st.q || norm(s).indexOf(st.q) >= 0; };
+  function depthOf(w) { return w.debugWorld ? 6 : w.depth; }
+
+  /* ---------------- Mondes ---------------- */
+  var FILTERS = [['d0', 'Refuges', function (w) { return w.depth === 0; }], ['d1', 'D1', function (w) { return w.depth === 1; }], ['d2', 'D2', function (w) { return w.depth === 2; }], ['d3', 'D3', function (w) { return w.depth === 3; }], ['d4', 'D4', function (w) { return w.depth === 4; }], ['d5', 'D5', function (w) { return w.depth === 5; }],
+    ['core', 'The first 40', function (w) { return w.core; }], ['secret', 'Secrets', function (w) { return /^W/.test(w.id) && !w.core; }], ['eff', 'With an effect', function (w) { return w.effects.length; }], ['inf', 'Infinite / looping', function (w) { return w.inf || w.wrap || w.loop; }],
+    ['real', 'Real time', function (w) { return (w.time && w.time.length) || (IN[w.id] || []).some(function (e) { return e.real; }); }], ['spawn', 'Appearing', function (w) { return !!w.spawn; }], ['gen', 'Generated', function (w) { return !!w.gen; }],
+    ['easy', 'Easy', function (w) { return w.tier === 'easy'; }], ['mid', 'Medium', function (w) { return w.tier === 'mid'; }], ['hard', 'Hard', function (w) { return w.tier === 'hard'; }], ['extreme', 'Extreme', function (w) { return w.tier === 'extreme'; }]];
+  function renderWorlds(m) {
+    var h = '<div class="filters">' + FILTERS.map(function (f) { return '<button type="button" class="chip' + (st.f[f[0]] ? ' on' : '') + '" data-f="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div>';
+    var act = FILTERS.filter(function (f) { return st.f[f[0]]; });
+    var groups = {}; act.forEach(function (f) { var g = /^d\d$/.test(f[0]) ? 'depth' : /^(easy|mid|hard|extreme)$/.test(f[0]) ? 'tier' : f[0]; (groups[g] = groups[g] || []).push(f[2]); });
+    var ws = D.worlds.filter(function (w) {
+      if (w.debugWorld && st.spoil < 3) return false;
+      for (var g in groups) if (!groups[g].some(function (fn) { return fn(w); })) return false;
+      return match(w.id + ' ' + w.name + ' ' + w.summary);
+    }).sort(function (a, b) { return (a.depth - b.depth) || (a.id < b.id ? -1 : 1); });
+    h += '<div class="small" style="margin-bottom:8px">' + ws.length + (ws.length === 1 ? ' place' : ' places') + '</div><div class="grid">';
+    ws.forEach(function (w) {
+      var known = seenW(w.id);
+      h += '<div class="card' + (known ? '' : ' unknown') + '" data-w="' + w.id + '"><h3><span class="dep d' + depthOf(w) + '">' + (w.debugWorld ? '?' : 'D' + w.depth) + '</span>' + esc(known ? w.name : '???') + '</h3><div class="meta">' + w.id + ' · ' + (TIER[w.tier] || w.tier) + (w.core ? ' · core' : '') + '</div>' +
+        (known ? '<p>' + esc(w.summary) + '</p>' : '') + '<div>' + (w.effects.length ? '<span class="tag gold">' + w.effects.length + ' effect' + (w.effects.length > 1 ? 's' : '') + '</span>' : '') + (w.inf ? '<span class="tag">infinite</span>' : '') + (w.wrap || w.loop ? '<span class="tag">looping</span>' : '') + (w.spawn ? '<span class="tag vio">appears</span>' : '') + (w.gen ? '<span class="tag">generated</span>' : '') + '</div></div>';
+    });
+    m.innerHTML = h + '</div>' + (ws.length ? '' : '<div class="empty">Nothing.</div>');
+    m.querySelectorAll('.chip').forEach(function (b) { b.addEventListener('click', function () { st.f[b.dataset.f] = !st.f[b.dataset.f]; render(); }); });
+    m.querySelectorAll('.card[data-w]').forEach(function (cd) { cd.addEventListener('click', function () { openWorld(cd.dataset.w); }); });
+  }
+
+  /* ---------------- fiche d'un monde ---------------- */
+  var cur = null;
+  function wlink(id) { var w = WB[id]; if (!w) return esc(id === 'WAKE' ? 'waking up' : id); return '<a data-go="' + id + '">' + esc(seenW(id) ? w.name : '???') + '</a> <span class="small">' + id + '</span>'; }
+  function drawThumb(w) {
+    var t = w.thumb; if (!t) return null;
+    var k = Math.max(2, Math.min(8, Math.floor(500 / Math.max(t.w, t.h)))), cv = document.createElement('canvas');
+    cv.width = t.w * k; cv.height = t.h * k; cv.className = 'thumb'; var x = cv.getContext('2d');
+    x.fillStyle = t.bg || '#000'; x.fillRect(0, 0, cv.width, cv.height);
+    for (var y = 0; y < t.h; y++) { var r = t.rows[y]; for (var i = 0; i < r.length; i++) { var ch = r[i]; if (ch === ' ') continue; x.fillStyle = t.pal[ch] || '#555'; x.fillRect(i * k, y * k, k, k); } }
+    if (st.spoil >= 1) t.marks.forEach(function (m) { x.fillStyle = m[2] === 'e' ? '#f0c860' : m[2] === 'a' ? '#a8d8ff' : m[2] === 's' ? '#b48cff' : m[2] === 'c' ? '#e8b860' : '#ffffff'; var s = Math.max(3, k); x.fillRect(m[0] * k + k / 2 - s / 2 - 1, m[1] * k + k / 2 - s / 2 - 1, s + 2, s + 2); x.fillStyle = '#000'; x.fillRect(m[0] * k + k / 2 - s / 2 + 1, m[1] * k + k / 2 - s / 2 + 1, s - 2, s - 2); });
+    return cv;
+  }
+  function edgeLine(e, dir) {
+    var other = dir === 'out' ? e.to : e.from, kind = { door: 'door', stairs: 'stairs', elevator: 'elevator', train: 'train', bed: 'bed', hole: 'hole', fall: 'fall', secret: 'secret passage', spawn: 'appearance', chalk: 'chalk drawing', link: 'passage', debug: 'character mode' }[e.kind] || e.kind;
+    var why = e.cond ? sp(2, '<span class="why"> — ' + esc(e.cond) + '</span>') : '';
+    return '<div class="edge-row">' + (dir === 'out' ? '→ ' : '← ') + wlink(other) + ' <span class="tag' + (e.real ? ' gold' : e.secret ? ' vio' : '') + '">' + kind + (e.oneway ? ', one-way' : '') + (e.real ? ', real time' : '') + '</span>' + why + '</div>';
+  }
+  function openWorld(id, keep) {
+    var w = WB[id]; if (!w) return; cur = id; if (!keep) history.replaceState(null, '', '#' + id);
+    var known = seenW(id), d = $('#detail');
+    var h = '<button class="close" type="button">close ✕</button><h2><span class="dep d' + depthOf(w) + '">' + (w.debugWorld ? '?' : 'D' + w.depth) + '</span>' + esc(known ? w.name : '???') + '</h2>';
+    h += '<div class="small">' + w.id + ' · ' + (TIER[w.tier] || w.tier) + ' · ' + (w.core ? 'the first 40' : (/^W/.test(w.id) ? 'secret, level ' + w.secretLevel : 'refuge')) + (w.region ? ' · ' + esc(String(w.region).replace(/^P(?=[\d?]$)/, 'D')) : '') + (w.music ? ' · music “' + esc(w.music) + '”' : '') + '</div>';
+    if (!known) { d.innerHTML = h + '<p class="empty">Not dreamt yet.</p>'; bindDetail(d); d.classList.add('open'); return; }
+    h += '<p>' + esc(w.summary) + '</p><div id="thumbslot"></div>';
+    if (w.art) h += '<div class="small">' + esc(w.art) + '</div>';
+    var tags = []; if (w.inf) tags.push('infinite'); if (w.wrap) tags.push('the edges meet'); if (w.loop) tags.push('looping'); if (w.gen) tags.push('generated: ' + w.gen); if (w.view && w.view !== 'top') tags.push(w.view + ' view'); if (w.size) tags.push(w.size[0] + ' × ' + w.size[1] + ' tiles'); if (w.annex) tags.push('goes on to the east'); if (w.outdoor) tags.push('outdoors'); if (w.dark >= 0.8) tags.push('very dark');
+    if (tags.length) h += '<div>' + tags.map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join('') + '</div>';
+    if (w.spawn) h += '<h4>Appearance</h4>' + sp(2, '<p>Has no fixed door. It opens somewhere else: ' + esc(w.spawn) + '.</p>');
+    if (w.rules.length) h += '<h4>Rules</h4>' + sp(1, '<ul>' + w.rules.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>');
+    if (w.time.length) h += '<h4>Time</h4>' + sp(1, '<ul>' + w.time.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>');
+    if (w.effects.length) h += '<h4>Effects</h4>' + sp(1, '<ul>' + w.effects.map(function (e) { var f = EB[e]; return '<li><a data-eff="' + e + '">' + esc(seenE(e) ? f.name : '???') + '</a> <span class="small">' + e + '</span>' + (f.get ? sp(2, '<div class="small">' + esc(f.get) + '</div>') : '') + '</li>'; }).join('') + '</ul>');
+    var inn = (IN[id] || []).filter(function (e) { return !e.debug || st.spoil >= 3; }), out = (OUT[id] || []).filter(function (e) { return !e.debug || st.spoil >= 3; });
+    if (inn.length) h += '<h4>Reached from</h4>' + sp(1, inn.map(function (e) { return edgeLine(e, 'in'); }).join(''));
+    if (out.length) h += '<h4>Exits</h4>' + sp(1, out.map(function (e) { return edgeLine(e, 'out'); }).join(''));
+    var ns = w.npcs.map(function (n) { return NB[n]; }).filter(Boolean);
+    if (ns.length) h += '<h4>Inhabitants</h4><ul>' + ns.map(function (n) { return '<li>' + (seenN(n.id) ? '<a data-npc="' + n.id + '">' + esc(n.name) + '</a>' : '???') + (n.major ? ' <span class="tag gold">major</span>' : '') + (n.voice ? ' <span class="tag">voice</span>' : '') + (n.hostile ? ' <span class="tag red">dangerous</span>' : '') + (n.appear ? sp(2, '<div class="small">only: ' + esc(n.appear) + '</div>') : '') + '</li>'; }).join('') + '</ul>';
+    if (w.souls && w.souls.length) h += '<h4>Souls (' + w.souls.length + ')</h4>' + sp(2, w.souls.map(function (so) { return '<div class="stage">' + so.map(function (l) { return (l.lang ? '<span class="tag vio">' + langName(l.lang) + '</span> ' : '') + esc(l.t) + (l.tr ? '<div class="small">' + esc(l.tr) + '</div>' : ''); }).join('<br>') + '</div>'; }).join(''));
+    if (w.secrets.length) h += '<h4>Secrets</h4>' + sp(2, '<ul>' + w.secrets.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul>');
+    if (w.role) h += '<h4>Role</h4>' + sp(2, '<p>' + esc(w.role) + '</p>');
+    if (w.lore) h += '<h4>What it is, perhaps</h4>' + sp(2, '<p class="lineq">' + esc(w.lore) + '</p>');
+    if (w.help) h += '<p class="small">' + esc(w.help) + '</p>';
+    d.innerHTML = h; var tc = drawThumb(w); if (tc) $('#thumbslot', d).appendChild(tc);
+    bindDetail(d); d.classList.add('open'); if (!keep) d.scrollTop = 0;
+  }
+  function openNpc(id) {
+    var n = NB[id]; if (!n) return; var d = $('#detail');
+    var h = '<button class="close" type="button">close ✕</button><h2>' + esc(n.name) + '</h2><div class="small">' + n.id + (n.major ? ' · major character' : '') + (n.langs.length ? ' · languages: ' + n.langs.map(langName).join(', ') : '') + '</div>';
+    var ws = [n.world].concat(n.worlds).filter(Boolean); if (ws.length) h += '<h4>Where</h4>' + ws.map(function (w) { return '<div>' + wlink(w) + '</div>'; }).join('');
+    if (n.appear) h += sp(2, '<p class="small">Present only: ' + esc(n.appear) + '</p>');
+    var info = [['Personality', n.personality], ['Habits', n.habits], ['What they want', n.wants], ['Flaw', n.flaw]].filter(function (x) { return x[1]; });
+    if (info.length) h += '<h4>Portrait</h4>' + sp(1, info.map(function (x) { return '<div><b>' + x[0] + '</b> — ' + esc(x[1]) + '</div>'; }).join(''));
+    if (n.lines.length) h += '<h4>Words</h4>' + sp(1, n.lines.map(function (l) { return '<div class="lineq">' + esc(l) + '</div>'; }).join(''));
+    if (n.arc || n.role) h += '<h4>Arc</h4>' + sp(2, '<p>' + esc([n.arc, n.role].filter(Boolean).join(' · ')) + '</p>');
+    if (n.lore) h += sp(2, '<p class="lineq">' + esc(n.lore) + '</p>');
+    d.innerHTML = h; bindDetail(d); d.classList.add('open'); d.scrollTop = 0;
+  }
+  function openEff(id) {
+    var e = EB[id]; if (!e) return; var d = $('#detail');
+    var h = '<button class="close" type="button">close ✕</button><h2>' + esc(seenE(id) ? e.name : '???') + '</h2><div class="small">' + e.id + ' · ' + esc(e.fam || '') + (e.core ? ' · needed for the ending' : '') + '</div>';
+    h += '<p class="lineq">' + esc(e.desc) + '</p><h4>Use</h4>' + sp(1, '<p>' + esc(e.use) + '</p>') + '<h4>Where</h4>' + sp(1, '<p>' + wlink(e.world) + '</p>') + '<h4>How</h4>' + sp(2, '<p>' + esc(e.get) + '</p>');
+    d.innerHTML = h; bindDetail(d); d.classList.add('open'); d.scrollTop = 0;
+  }
+  function bindDetail(d) {
+    $('.close', d).addEventListener('click', function () { d.classList.remove('open'); cur = null; history.replaceState(null, '', location.pathname + location.search); });
+    d.querySelectorAll('[data-go]').forEach(function (a) { a.addEventListener('click', function () { openWorld(a.dataset.go); if (st.tab === 'map') focusNode(a.dataset.go); }); });
+    d.querySelectorAll('[data-npc]').forEach(function (a) { a.addEventListener('click', function () { openNpc(a.dataset.npc); }); });
+    d.querySelectorAll('[data-eff]').forEach(function (a) { a.addEventListener('click', function () { openEff(a.dataset.eff); }); });
+  }
+  function langName(l) { return { 'ko-s': 'Korean (South)', 'ko-n': 'Korean (North)', en: 'English', val: 'Vallonian', fr: 'French' }[l] || l; }
+
+  /* ---------------- Carte ---------------- */
+  var view = { x: 0, y: 0, k: 0.55 }, svg = null;
+  function renderMap(m) {
+    m.innerHTML = '<div id="mapwrap"><div class="maptools"><button type="button" data-z="1.25">+</button><button type="button" data-z="0.8">−</button><button type="button" data-z="0">recenter</button></div><svg id="map" xmlns="http://www.w3.org/2000/svg"><g id="vp"></g></svg></div>' +
+      '<div class="legend"><span><i style="border-color:#8a84a0"></i>door</span><span><i style="border-color:#e8b860;border-top-style:dashed"></i>conditional</span><span><i style="border-color:#b48cff;border-top-style:dotted"></i>secret</span><span><i style="border-color:#f0e060;border-top-width:3px"></i>real time</span><span><i style="border-color:#6cd08a;border-top-style:dotted"></i>appearance</span><span><i style="border-color:#e0607a"></i>fall / one-way</span><span>hover a place: its passages · click: its page · drag / wheel: move around</span></div>';
+    svg = $('#map'); var g = $('#vp'), parts = [];
+    var cols = {}; D.worlds.forEach(function (w) { var c = depthOf(w); if (c === 6 && st.spoil < 3) return; cols[c] = Math.max(cols[c] || 0, w.pos[1]); });
+    Object.keys(cols).forEach(function (c) { parts.push('<text class="colhead" x="' + (c * 300 + 40) + '" y="14">' + (c == 0 ? 'Refuges' : c == 6 ? '?' : 'Depth ' + c) + '</text>'); });
+    var showE = function (e) { if (e.debug && st.spoil < 3) return false; if (!WB[e.to]) return false; if (st.mine && (!seenW(e.from) || !seenW(e.to))) return false; return true; };
+    D.edges.forEach(function (e, i) {
+      if (!showE(e)) return; var a = WB[e.from].pos, b = WB[e.to].pos; if (!a || !b) return;
+      var cls = e.debug ? 'debug' : e.real ? 'real' : e.spawn ? 'spawn' : (e.kind === 'fall' || e.oneway) ? 'fall' : e.secret ? 'secret' : e.cond ? 'cond' : 'door';
+      if (st.spoil < 2 && (cls === 'secret' || cls === 'spawn')) cls = 'cond';
+      var mx = (a[0] + b[0]) / 2, dy = a[0] === b[0] ? 60 : 0;
+      parts.push('<path class="e ' + cls + '" data-a="' + e.from + '" data-b="' + e.to + '" d="M' + a[0] + ',' + a[1] + ' C' + (mx + dy) + ',' + a[1] + ' ' + (mx + dy) + ',' + b[1] + ' ' + b[0] + ',' + b[1] + '"/>');
+    });
+    D.worlds.forEach(function (w) {
+      if (w.debugWorld && st.spoil < 3) return; var known = seenW(w.id), p = w.pos;
+      var col = getComputedStyle(document.documentElement).getPropertyValue('--d' + depthOf(w));
+      var r = w.core ? 6 : 4.5; var hit = !st.q || norm(w.id + ' ' + w.name).indexOf(st.q) >= 0;
+      parts.push('<g class="n' + (hit ? '' : ' dim') + '" data-w="' + w.id + '"><circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="' + (known ? col : '#3a3446') + '"/><text x="' + (p[0] + 9) + '" y="' + (p[1] + 4) + '">' + esc(w.id.replace(/^W/, '') + ' ' + (known ? w.name : '???')).slice(0, 34) + '</text></g>');
+    });
+    g.innerHTML = parts.join('');
+    applyView();
+    g.querySelectorAll('.n').forEach(function (n) {
+      n.addEventListener('mouseenter', function () { hilite(n.dataset.w); });
+      n.addEventListener('mouseleave', function () { hilite(null); });
+      n.addEventListener('click', function (ev) { if (moved) return; openWorld(n.dataset.w); ev.stopPropagation(); });
+    });
+    var wrap = $('#mapwrap'), drag = null, moved = false;
+    wrap.addEventListener('pointerdown', function (e) { if (e.target.closest('.maptools')) return; drag = [e.clientX, e.clientY, view.x, view.y]; moved = false; wrap.classList.add('drag'); wrap.setPointerCapture(e.pointerId); });
+    wrap.addEventListener('pointermove', function (e) { if (!drag) return; var dx = e.clientX - drag[0], dy = e.clientY - drag[1]; if (Math.abs(dx) + Math.abs(dy) > 4) moved = true; view.x = drag[2] + dx; view.y = drag[3] + dy; applyView(); });
+    wrap.addEventListener('pointerup', function () { drag = null; wrap.classList.remove('drag'); setTimeout(function () { moved = false; }, 0); });
+    wrap.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.offsetX, e.offsetY); }, { passive: false });
+    m.querySelectorAll('.maptools button').forEach(function (b) { b.addEventListener('click', function () { var z = +b.dataset.z; if (!z) { view = { x: 0, y: 0, k: 0.55 }; applyView(); } else zoomAt(z, wrap.clientWidth / 2, wrap.clientHeight / 2); }); });
+    if (cur) focusNode(cur);
+  }
+  function applyView() { var g = $('#vp'); if (g) g.setAttribute('transform', 'translate(' + view.x + ',' + view.y + ') scale(' + view.k + ')'); }
+  function zoomAt(f, ox, oy) { var k2 = Math.max(0.15, Math.min(3, view.k * f)); view.x = ox - (ox - view.x) * (k2 / view.k); view.y = oy - (oy - view.y) * (k2 / view.k); view.k = k2; applyView(); }
+  function focusNode(id) { var w = WB[id], wrap = $('#mapwrap'); if (!w || !wrap) return; view.k = Math.max(view.k, 0.9); view.x = wrap.clientWidth / 2 - w.pos[0] * view.k; view.y = wrap.clientHeight / 2 - w.pos[1] * view.k; applyView(); hilite(id); }
+  function hilite(id) {
+    var g = $('#vp'); if (!g) return;
+    if (!id) { g.querySelectorAll('.dim2').forEach(function (n) { n.classList.remove('dim2', 'dim'); }); return; }
+    var keep = {}; keep[id] = 1;
+    g.querySelectorAll('.e').forEach(function (p) { var on = p.dataset.a === id || p.dataset.b === id; if (on) { keep[p.dataset.a] = 1; keep[p.dataset.b] = 1; } p.classList.toggle('dim', !on); p.classList.add('dim2'); });
+    g.querySelectorAll('.n').forEach(function (n) { n.classList.toggle('dim', !keep[n.dataset.w]); n.classList.add('dim2'); });
+  }
+
+  /* ---------------- Effets ---------------- */
+  function renderEffects(m) {
+    var es = D.effects.filter(function (e) { return match(e.id + ' ' + e.name + ' ' + e.fam + ' ' + e.desc); });
+    var h = '<p class="intro">Effects are found in dreams. You equip one at a time. Laying an effect in a nest in the Nexus keeps it forever, but it can no longer be equipped. Thirty nests: something opens.</p><div class="grid">';
+    es.forEach(function (e) { var k = seenE(e.id); h += '<div class="card' + (k ? '' : ' unknown') + '" data-e="' + e.id + '"><span class="glyph" style="color:' + (e.color || 'var(--gold)') + '">' + esc(e.glyph || e.name.slice(0, 1)) + '</span><h3>' + esc(k ? e.name : '???') + '</h3><div class="meta">' + e.id + ' · ' + esc(e.fam) + (e.core ? ' · core' : '') + '</div><p>' + (k ? esc(e.desc) : '') + '</p></div>'; });
+    m.innerHTML = h + '</div>';
+    m.querySelectorAll('[data-e]').forEach(function (c) { c.addEventListener('click', function () { openEff(c.dataset.e); }); });
+  }
+  /* ---------------- Habitants ---------------- */
+  function renderNpcs(m) {
+    var ns = D.npcs.filter(function (n) { return match(n.id + ' ' + n.name + ' ' + (WB[n.world] ? WB[n.world].name : '') + ' ' + n.personality); }).sort(function (a, b) { return (b.major - a.major) || (a.world < b.world ? -1 : a.world > b.world ? 1 : 0); });
+    var h = '<div class="small" style="margin-bottom:8px">' + ns.length + (ns.length === 1 ? ' inhabitant' : ' inhabitants') + '</div><div class="grid">';
+    ns.forEach(function (n) { var k = seenN(n.id); h += '<div class="card' + (k ? '' : ' unknown') + '" data-n="' + n.id + '"><h3>' + esc(k ? n.name : '???') + '</h3><div class="meta">' + (WB[n.world] ? esc(WB[n.world].name) + ' · ' : '') + n.id + '</div><div>' + (n.major ? '<span class="tag gold">major</span>' : '') + (n.voice ? '<span class="tag">voice</span>' : '') + n.langs.map(function (l) { return '<span class="tag vio">' + langName(l) + '</span>'; }).join('') + (n.hostile ? '<span class="tag red">dangerous</span>' : '') + '</div></div>'; });
+    m.innerHTML = h + '</div>';
+    m.querySelectorAll('[data-n]').forEach(function (c) { c.addEventListener('click', function () { openNpc(c.dataset.n); }); });
+  }
+  /* ---------------- Fils ---------------- */
+  function renderQuests(m) {
+    var h = '<p class="intro">The game never announces these threads. Nothing keeps track of them but you.</p><div class="grid">';
+    D.quests.filter(function (q) { return match(q.id + ' ' + q.name + ' ' + q.giver); }).forEach(function (q) {
+      var me = mine && mine.quests[q.id] ? mine.quests[q.id].stage : null;
+      h += '<div class="card" style="cursor:default"><h3>' + esc(q.name) + '</h3><div class="meta">' + q.id + (q.giver ? ' · ' + esc(q.giver) : '') + (q.world ? ' · ' + esc(WB[q.world] ? WB[q.world].name : q.world) : '') + (me ? ' · <span style="color:var(--gold)">your game: ' + esc(me) + '</span>' : '') + '</div>' +
+        sp(2, q.stages.map(function (s) { return '<div class="stage' + (q.ends.indexOf(s[0]) >= 0 ? ' end' : '') + '"><b>' + esc(s[0]) + '</b> — ' + esc(s[1]) + '</div>'; }).join('') + (q.reward ? '<div class="small">At the end: ' + esc(q.reward) + '</div>' : '')) + '</div>';
+    });
+    m.innerHTML = h + '</div>';
+  }
+  /* ---------------- Fins ---------------- */
+  function renderEndings(m) {
+    var h = '<p class="intro">Four endings. None of them is explained in the game.' + (mine ? ' Your game has found ' + mine.endings.length + '.' : '') + '</p><div class="grid">';
+    D.endings.forEach(function (e) { h += '<div class="card" style="cursor:default"><h3>Ending ' + e.id + ' — ' + esc(st.spoil >= 3 ? e.name : '…') + '</h3>' + sp(3, '<p>' + esc(e.how) + '</p>' + (e.note ? '<p class="small">' + esc(e.note) + '</p>' : '')) + '</div>'; });
+    m.innerHTML = h + '</div><p class="small" style="margin-top:16px">This game talks about suicide. If you are going through a hard time, someone will answer, day and night, for free: <b>109</b> in South Korea, <b>988</b> in the US, <b>116 123</b> in the UK, <b>3114</b> in France. Elsewhere: findahelpline.com.</p>';
+  }
+  /* ---------------- Sorcières ---------------- */
+  function renderWitches(m) {
+    var h = '<p class="intro">Five witches, and the Priestess. Only they catch you. A biscuit saves you from one embrace.</p><table><tr><th></th><th>Appearance</th><th>What draws her</th><th>Escaping her</th></tr>';
+    D.witches.forEach(function (w) { h += '<tr><td><b>' + esc(w.num + ' · ' + w.name) + '</b><div class="small">' + esc(w.appear) + '</div></td><td>' + esc(w.look) + '<div class="small">' + esc(w.sound) + '</div></td><td>' + sp(1, esc(w.detect)) + '</td><td>' + sp(1, esc(w.escape)) + '</td></tr>'; });
+    h += '</table><h3 style="margin-top:20px">The High Priestess</h3>' + sp(1, '<p>Rare, announced 15 to 30 s in advance (inhabitants frozen, music slowed down, symbols on the walls, a door in the wrong place). Faster than anything, she sees in the dark and rewrites the rules of the place every ten seconds. Three bells, and her embrace ignores biscuits: break her line of sight before the third. Hiding places fool her if she is far away. She leaves corruption behind her.</p>') + sp(3, '<p class="small">What she is is never said. Five names are given to her in the dreams (arc M2).</p>');
+    m.innerHTML = h;
+  }
+  /* ---------------- Comment lire ---------------- */
+  function renderLegend(m) {
+    m.innerHTML = '<div class="intro"><p>This wiki is drawn from the game data. The game itself only explains its loop: sleep, dream, find effects, keep them, wake up.</p>' +
+      '<p><b>Depths.</b> D0: the bedroom and its refuges. D1–D2: the first forty dreams, enough to finish. D3–D4: the secret dreams, stranger and stranger. D5: the sixth layer — only two paths lead down there.</p>' +
+      '<p><b>Spoilers.</b> Choose a level at the top. Each blurred block can be revealed on its own. “My archive” shows only what your game has already seen (this browser’s save, read and never modified).</p>' +
+      '<p><b>Conditions.</b> “real time” means your computer’s clock. Nothing that depends on it is needed to finish.</p>' +
+      '<p><b>Direct link.</b> Add #W012 to the address to open a page.</p></div>';
+  }
+
+  function render() {
+    renderTabs(); var m = $('#main');
+    if (st.tab === 'worlds') renderWorlds(m); else if (st.tab === 'map') renderMap(m); else if (st.tab === 'effects') renderEffects(m); else if (st.tab === 'people') renderNpcs(m); else if (st.tab === 'threads') renderQuests(m); else if (st.tab === 'endings') renderEndings(m); else if (st.tab === 'witches') renderWitches(m); else renderLegend(m);
+  }
+  render();
+  if (location.hash && WB[location.hash.slice(1)]) openWorld(location.hash.slice(1), true);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { $('#detail').classList.remove('open'); cur = null; } });
+})();
+</script>
+</body>
+</html>

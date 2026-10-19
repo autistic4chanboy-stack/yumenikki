@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yume Nikki — The Dream Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=VT323&display=swap">
+<link rel="stylesheet" href="src/ui/style.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="screen" width="320" height="240"></canvas>
+  <div id="ui">
+    <div id="hud"></div>
+    <div id="bubbles"></div>
+    <div id="dialog"></div>
+    <div id="toast"></div>
+    <canvas id="minimap"></canvas>
+  </div>
+</div>
+<div id="menus"></div>
+<div id="fade"></div>
+<canvas id="scare"></canvas>
+<div id="fps"></div>
+<noscript>This game needs JavaScript.</noscript>
+
+<!-- core -->
+<script src="src/core/yn.js"></script>
+<script src="src/core/realtime.js"></script>
+<script src="src/core/save.js"></script>
+<script src="src/core/cond.js"></script>
+<script src="src/core/actions.js"></script>
+<script src="src/core/input.js"></script>
+<!-- rendering -->
+<script src="src/render/tiles.js"></script>
+<script src="src/render/paint.js"></script>
+<script src="src/render/pixel.js"></script>
+<script src="src/render/pixel_mat.js"></script>
+<script src="src/render/terrain.js"></script>
+<script src="src/render/art_chars.js"></script>
+<script src="src/render/art_horror.js"></script>
+<script src="src/render/art_decor.js"></script>
+<script src="src/render/pixel_art.js"></script>
+<script src="src/render/postfx.js"></script>
+<script src="src/render/renderer.js"></script>
+<script src="src/render/raycast.js"></script>
+<!-- audio -->
+<script src="src/audio/music_config.js"></script>
+<script src="src/audio/music_styles.js"></script>
+<script src="src/audio/audio.js"></script>
+<!-- worlds -->
+<script src="src/world/mapgen.js"></script>
+<script src="src/world/vast.js"></script>
+<script src="src/world/world.js"></script>
+<script src="src/world/network.js"></script>
+<script src="src/world/mech_core.js"></script>
+<script src="src/world/mech_lib.js"></script>
+<script src="src/world/mech_puzzles.js"></script>
+<script src="src/world/mech_puzzles2.js"></script>
+<script src="src/world/mech_new.js"></script>
+<script src="src/world/spawns.js"></script>
+<script src="src/world/furnish.js"></script>
+<script src="src/world/finds.js"></script>
+<script src="src/world/secrets.js"></script>
+<!-- systems -->
+<script src="src/systems/languages.js"></script>
+<script src="src/systems/effects.js"></script>
+<script src="src/systems/entities.js"></script>
+<script src="src/systems/collect.js"></script>
+<script src="src/systems/stories.js"></script>
+<script src="src/systems/dialogue.js"></script>
+<script src="src/systems/speech.js"></script>
+<script src="src/core/game.js"></script>
+<script src="src/systems/player.js"></script>
+<script src="src/systems/witches.js"></script>
+<script src="src/systems/priestess.js"></script>
+<script src="src/systems/corruption.js"></script>
+<script src="src/systems/room.js"></script>
+<script src="src/systems/debug.js"></script>
+<script src="src/systems/endings.js"></script>
+<script src="src/systems/validate.js"></script>
+<!-- interface -->
+<script src="src/ui/ui.js"></script>
+<script src="src/ui/menus.js"></script>
+<script src="src/ui/schema.js"></script>
+<script src="src/ui/fruitmerge.js"></script>
+<!-- data -->
+<script src="data/effects.js"></script>
+<script src="data/lore.js"></script>
+<script src="data/worlds/_kit.js"></script>
+<script src="data/worlds/_secret_kit.js"></script>
+<script src="data/worlds/hub.js"></script>
+<script src="data/worlds/w001_garden.js"></script>
+<script src="data/entities/garden.js"></script>
+<script src="data/worlds/core_1.js"></script>
+<script src="data/entities/core_1.js"></script>
+<script src="data/worlds/core_2.js"></script>
+<script src="data/entities/core_2.js"></script>
+<script src="data/worlds/core_3.js"></script>
+<script src="data/entities/core_3.js"></script>
+<script src="data/worlds/core_4.js"></script>
+<script src="data/entities/core_4.js"></script>
+<script src="data/worlds/core_5.js"></script>
+<script src="data/entities/core_5.js"></script>
+<script src="data/worlds/core_6.js"></script>
+<script src="data/entities/core_6.js"></script>
+<script src="data/worlds/secret_1.js"></script>
+<script src="data/worlds/secret_2.js"></script>
+<script src="data/worlds/secret_3.js"></script>
+<script src="data/worlds/secret_4.js"></script>
+<script src="data/worlds/secret_5.js"></script>
+<script src="data/worlds/secret_6.js"></script>
+<script src="data/worlds/secret_7.js"></script>
+<script src="data/worlds/secret_8.js"></script>
+<script src="data/entities/extra.js"></script>
+<script src="data/worlds/new_01.js"></script>
+<script src="data/worlds/new_02.js"></script>
+<script src="data/worlds/new_03.js"></script>
+<script src="data/worlds/new_04.js"></script>
+<script src="data/worlds/new_05.js"></script>
+<script src="data/worlds/new_06.js"></script>
+<script src="data/worlds/new_07.js"></script>
+<script src="data/worlds/new_08.js"></script>
+<script src="data/worlds/new_09.js"></script>
+<script src="data/worlds/new_10.js"></script>
+<script src="data/worlds/_more_kit.js"></script>
+<script src="data/worlds/more_01.js"></script>
+<script src="data/worlds/more_02.js"></script>
+<script src="data/worlds/more_03.js"></script>
+<script src="data/worlds/more_04.js"></script>
+<script src="data/worlds/more_05.js"></script>
+<script src="data/worlds/more_06.js"></script>
+<script src="data/worlds/more_07.js"></script>
+<script src="data/worlds/more_08.js"></script>
+<script src="data/worlds/_psy.js"></script>
+<script src="data/entities/_horror.js"></script>
+<script src="data/quests.js"></script>
+<script src="data/stories/s4_dream.js"></script>
+<script src="data/stories/s5_choices.js"></script>
+<script src="data/stories/s3_home.js"></script>
+<script src="data/stories/s1_south.js"></script>
+<script src="data/stories/s2_north.js"></script>
+<script src="data/realtime_events.js"></script>
+<script src="data/effects_more.js"></script>
+<script src="data/collections.js"></script>
+<script src="data/effects_look.js"></script>
+<script src="data/worlds/_expanse.js"></script>
+<script src="data/worlds/_vast.js"></script>
+<script src="data/audio_plan.js"></script>
+<!-- boot -->
+<script src="src/main.js"></script>
+</body>
+</html>
+<!-- 41 53 43 49 49 — in the middle, when everything is off, out loud. -->
