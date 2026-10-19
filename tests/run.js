@@ -373,5 +373,28 @@ t('mondes qui bouclent : on peut vraiment en faire le tour (passages aux bords)'
   return n + ' mondes en boucle';
 });
 
+t('portes posées au hasard : espacées, loin de l’arrivée, une case libre devant (lieux assez grands)', function () {
+  freshDream(); var W = YN.data.worlds, WD = YN.world, bad = { coll: [], arr: [], front: [] }, n = 0;
+  U.keys(W).filter(function (k) { return /^W\d{3}$/.test(k); }).forEach(function (id) {
+    var d = W[id]; if (d.inf || (d.style && (d.style.view === 'side' || d.style.view === 'fps'))) return;
+    var rt = WD.build(id); if (rt.inf || rt.view !== 'top') return;
+    var back = rt.marks.filter(function (m) { return YN.DOOR_TYPES[m.type] && m.def.essential; })[0];
+    var a = WD.arrival(rt, back ? back.def.id || back.key : null, back ? back.def.to : null).pos, PG = WD.passGrid(rt, 'npc'), area = 0;
+    for (var i = 0; i < PG.length; i++) area += PG[i];
+    if (area < 300) return; // les toutes petites pièces n'ont pas la place
+    var doors = rt.marks.filter(function (m) { return (WD.DOOR_WALL[m.type] || WD.DOOR_FLOOR[m.type]) && !m.def.secretDoor && !m.def.painted; });
+    doors.forEach(function (m) {
+      var rnd = (m.def.at === 'random-any' || m.def.at === 'random' || m.def.spawned); if (!rnd) return; n++;
+      if (doors.some(function (o) { return o !== m && Math.max(Math.abs(o.x - m.x), Math.abs(o.y - m.y)) <= 1; })) bad.coll.push(id + ':' + m.def.id);
+      if (m !== back && Math.max(Math.abs(a[0] - m.x), Math.abs(a[1] - m.y)) < 2) bad.arr.push(id + ':' + m.def.id);
+      if (rt.marksAt(m.x, m.y + 1).some(function (o) { return o.solid && o.active && !YN.DOOR_TYPES[o.type]; })) bad.front.push(id + ':' + m.def.id);
+    });
+  });
+  ok(bad.coll.length <= 3, 'portes collées : ' + bad.coll.join(' '));
+  ok(bad.arr.length <= 3, 'portes sur l’arrivée : ' + bad.arr.join(' '));
+  ok(bad.front.length <= 3, 'objet devant une porte : ' + bad.front.join(' '));
+  return n + ' portes au hasard · collées ' + bad.coll.length + ' · arrivée ' + bad.arr.length + ' · objet devant ' + bad.front.length;
+});
+
 console.log('\n' + pass + ' réussis, ' + fail + ' échoués' + (fail ? ' : ' + fails.join(' ; ') : ''));
 process.exit(fail ? 1 : 0);

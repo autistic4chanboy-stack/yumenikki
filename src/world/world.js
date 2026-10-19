@@ -175,7 +175,9 @@
         WD.addMark(rt, md, mp[1], mp[2], mp[0]);
       });
       // les cases des marques fixes sont réservées : une marque posée au hasard avant elles ne s'y met pas
-      rt._reserved = {}; (def.place || []).forEach(function (pd) { if (Array.isArray(pd.at)) { var rx = pd.at[0] < 0 ? rt.w + pd.at[0] : pd.at[0], ry = pd.at[1] < 0 ? rt.h + pd.at[1] : pd.at[1]; rt._reserved[rx + ',' + ry] = 1; } });
+      rt._reserved = {}; (def.place || []).forEach(function (pd) { if (Array.isArray(pd.at)) { var rx = pd.at[0] < 0 ? rt.w + pd.at[0] : pd.at[0], ry = pd.at[1] < 0 ? rt.h + pd.at[1] : pd.at[1]; rt._reserved[rx + ',' + ry] = 1; if (DOOR_TYPES[pd.type]) rt._reserved[rx + ',' + (ry + 1)] = 1; } });
+      // devant une porte (où l'on se présente), rien ne se pose au hasard
+      rt.marks.forEach(function (m0) { if (DOOR_TYPES[m0.type]) rt._reserved[m0.x + ',' + (m0.y + 1)] = 1; });
       (def.place || []).forEach(function (pd, i) {
         rt._placing = pd; var at = WD.resolveAt(rt, pd.at, i); rt._placing = null;
         if (at) WD.addMark(rt, pd, at[0], at[1], pd.ch || null);
@@ -187,6 +189,7 @@
       vflags.custom.forEach(function (cv) { (cv.place || []).forEach(function (pd, i) { var at = WD.resolveAt(rt, pd.at, i); if (at) WD.addMark(rt, pd, at[0], at[1], null); }); });
       // ---- mondes à apparition (portes qui surgissent selon une règle) ----
       if (YN.spawns) { try { YN.spawns.apply(rt); } catch (e) { YN.warn('spawns: ' + e); } }
+      WD.markFronts(rt);
       // ---- marques posées au hasard : on les ramène à portée de pas ----
       WD.thinSouls(rt);
       if (YN.furnish && !rt.inf) { try { YN.furnish.apply(rt); } catch (e) { YN.warn(id + ' furnishing: ' + (e.stack || e)); } }
@@ -200,7 +203,8 @@
       if (YN.collect) { try { YN.collect.onBuild(rt); } catch (e) { YN.warn(id + ' collections: ' + (e.stack || e)); } }
       if (YN.stories) { try { YN.stories.placeItems(rt); } catch (e) { YN.warn(id + ' stories: ' + (e.stack || e)); } }
       if (!rt.inf && rt.view !== 'side') { try { WD.fixReach(rt); } catch (e) { YN.warn('placement: ' + e); } }
-      if (!rt.inf && rt.view === 'top') { try { WD.settleDoors(rt); } catch (e) { YN.warn('doors: ' + e); } }
+      if (!rt.inf && rt.view === 'top') { try { WD.placeDoors(rt); } catch (e) { YN.warn('doors: ' + (e.stack || e)); } }
+      if (!rt.inf && rt.view === 'top') { try { WD.settleDoors(rt); } catch (e) { YN.warn('furniture: ' + e); } }
       if (!rt.inf && rt.view !== 'side') { try { WD.hangWallDecor(rt); } catch (e) { YN.warn('wall decor: ' + e); } }
       if (!rt.inf && rt.view === 'top') { try { WD.breakBarriers(rt); } catch (e) { YN.warn(id + ' barriers: ' + (e.stack || e)); } }
       if (YN.secrets && !rt.inf && rt.view === 'top') { try { YN.secrets.finalCheck(rt); } catch (e) { YN.warn(id + ' final check: ' + (e.stack || e)); } }
@@ -229,9 +233,10 @@
     /* grille d'occupation des marques (actives, visibles) : combien de marques, combien de solides par case */
     markGrid: function (rt) {
       var w = rt.w, h = rt.h, any = new Uint16Array(w * h), sol = new Uint16Array(w * h);
-      rt.marks.forEach(function (m) { if (!m.active || m.hidden || m.x < 0 || m.y < 0 || m.x >= w || m.y >= h) return; var k = m.y * w + m.x; any[k]++; if (m.solid) sol[k]++; });
+      var future = function (m) { return !m.active && DOOR_TYPES[m.type] && (m.def.spawned || m.def.cond); }; // une porte qui n'apparaît que plus tard occupe déjà sa case
+      rt.marks.forEach(function (m) { if ((!m.active && !future(m)) || m.hidden || m.x < 0 || m.y < 0 || m.x >= w || m.y >= h) return; var k = m.y * w + m.x; any[k]++; if (m.solid && m.active) sol[k]++; });
       return { any: any, sol: sol, w: w, h: h,
-        move: function (m, nx, ny) { var on = m.active && !m.hidden; if (on && m.x >= 0 && m.y >= 0 && m.x < w && m.y < h) { var k0 = m.y * w + m.x; any[k0]--; if (m.solid) sol[k0]--; } m.x = nx; m.y = ny; if (on && nx >= 0 && ny >= 0 && nx < w && ny < h) { var k1 = ny * w + nx; any[k1]++; if (m.solid) sol[k1]++; } },
+        move: function (m, nx, ny) { var on = (m.active || future(m)) && !m.hidden; if (on && m.x >= 0 && m.y >= 0 && m.x < w && m.y < h) { var k0 = m.y * w + m.x; any[k0]--; if (m.solid && m.active) sol[k0]--; } m.x = nx; m.y = ny; if (on && nx >= 0 && ny >= 0 && nx < w && ny < h) { var k1 = ny * w + nx; any[k1]++; if (m.solid && m.active) sol[k1]++; } },
         has: function (x, y) { return x >= 0 && y >= 0 && x < w && y < h && any[y * w + x] > 0; } };
     },
     /* passage case par case, calculé d'un coup (pour les parcours de carte) : who = 'player' (faux murs compris) ou 'npc' */
@@ -255,7 +260,7 @@
     settleDoors: function (rt) {
       if (!WD.indoor(rt)) return;
       var AG = (YN.furnish && YN.furnish.AGAINST) || {};
-      var todo = rt.marks.filter(function (m) { var rnd = (typeof m.def.at === 'string' && m.def.at.indexOf('random') === 0) || m.def.spawned; return m.active && rnd && !m.def.free && ((WD.DOOR_WALL[m.type] && !m.def.secretDoor && !m.def.painted) || (m.type === 'decor' && m.solid && AG[m.look] && !m.def.furnished)); }); // portes, et meubles d'intérieur des fiches
+      var todo = rt.marks.filter(function (m) { var rnd = (typeof m.def.at === 'string' && m.def.at.indexOf('random') === 0) || m.def.spawned; return m.active && rnd && !m.def.free && m.type === 'decor' && m.solid && AG[m.look] && !m.def.furnished; }); // meubles d'intérieur des fiches (les portes : placeDoors)
       if (!todo.length) return;
       var w = rt.w, h = rt.h;
       var wallAt = function (x, y) { if (x < 0 || y < 0 || x >= w || y >= h) return false; return !!YN.tileInfo(rt.tile(x, y)).wall; };
@@ -271,7 +276,7 @@
       var MG = WD.markGrid(rt), cand = [], cut = WD.cutAny(rt);
       var ok = function (x, y) { return x >= 0 && y >= 0 && x < w && y < h && seen[y * w + x] === 1; };
       for (var y = 1; y < h - 1; y++) for (var x = 1; x < w - 1; x++) {
-        if (!ok(x, y) || WD.choke(rt, x, y) || cut[y * w + x] || (rt.fake && rt.fake[y * w + x]) || MG.has(x, y) || U.dist(x, y, start[0], start[1]) < 2) continue;
+        if (!ok(x, y) || WD.choke(rt, x, y) || cut[y * w + x] || (rt.fake && rt.fake[y * w + x]) || (rt._fronts && rt._fronts[y * w + x]) || MG.has(x, y) || U.dist(x, y, start[0], start[1]) < 2) continue;
         // contre le mur du fond d'abord ; sinon contre un mur de côté, la case devant restant libre
         var pen = -1;
         if (wallAt(x, y - 1) && ok(x, y + 1) && !MG.has(x - 1, y) && !MG.has(x + 1, y) && !MG.has(x, y + 1)) pen = 0;
@@ -335,7 +340,7 @@
         var moved = 0;
         blockers.forEach(function (b) {
           var best = -1, bd = 1e9;
-          for (var i = 0; i < pool.length; i++) { var cc = pool[i], k2 = cc[1] * w + cc[0]; if (cut[k2] || !roomy(cc[0], cc[1]) || U.dist(cc[0], cc[1], a[0], a[1]) < 3 || (boxed && seen[k2])) continue; var d = Math.abs(cc[0] - b.x) + Math.abs(cc[1] - b.y); if (d < bd) { bd = d; best = i; } }
+          for (var i = 0; i < pool.length; i++) { var cc = pool[i], k2 = cc[1] * w + cc[0]; if (cut[k2] || (rt._fronts && rt._fronts[k2]) || !roomy(cc[0], cc[1]) || U.dist(cc[0], cc[1], a[0], a[1]) < 3 || (boxed && seen[k2])) continue; var d = Math.abs(cc[0] - b.x) + Math.abs(cc[1] - b.y); if (d < bd) { bd = d; best = i; } }
           if (best < 0) { if (!important(b)) { b.solid = false; moved++; } return; } // plus de place : il devient traversable
           var t = pool[best]; MG.move(b, t[0], t[1]); moved++;
           for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { var n = wr(t[0] + dx, t[1] + dy); if (n[0] >= 0 && n[1] >= 0 && n[0] < w && n[1] < h) used[n[1] * w + n[0]] = 1; }
@@ -359,6 +364,85 @@
       if (x < 0 || y < 0 || x >= w || y >= h) return false;
       return rt._main.comp[y * w + x] === rt._main.best;
     },
+    /* LES PORTES POSÉES AU HASARD (portes, ascenseurs, escaliers, passages latéraux, portes qui apparaissent plus tard…)
+       vont à un endroit qui a du sens : dans un lieu fermé contre un mur ; dehors sur un sol dégagé, pas dans un buisson
+       ni contre l'eau ; toujours avec une case libre devant pour s'y présenter ; jamais collées à une autre porte ni à
+       l'arrivée ; réparties sur la carte ; les passages latéraux plutôt vers les bords. Les portes placées à la main,
+       celles des cachettes et les tableaux-portes ne bougent pas ; celles « random-hidden » restent dans leur recoin. */
+    DOOR_FLOOR: { stairs: 1, ladder: 1 },
+    placeDoors: function (rt) {
+      var w = rt.w, h = rt.h, isDoor = function (m) { return WD.DOOR_WALL[m.type] || WD.DOOR_FLOOR[m.type] || m.type === 'bed'; };
+      var rnd = function (m) { return (typeof m.def.at === 'string' && (m.def.at === 'random' || m.def.at === 'random-any')) || m.def.spawned; };
+      var todo = rt.marks.filter(function (m) { return isDoor(m) && rnd(m) && !m.def.secretDoor && !m.def.painted && !m.def.free && m.x >= 0 && m.y >= 0 && m.x < w && m.y < h; });
+      if (!todo.length) return;
+      var back = rt.marks.filter(function (m) { return DOOR_TYPES[m.type] && m.def.essential; })[0];
+      todo.sort(function (a, b) { return (b === back ? 1 : 0) - (a === back ? 1 : 0); }); // la porte du retour d'abord : c'est elle qui décide de l'arrivée
+      var indoor = WD.indoor(rt), r = YN.rng.make((rt.seed ^ 0x5bd1e995) >>> 0);
+      var wr = function (x, y) { return rt.wrap ? [U.mod(x, w), U.mod(y, h)] : [x, y]; };
+      var tinfo = function (x, y) { var c = wr(x, y); if (c[0] < 0 || c[1] < 0 || c[0] >= w || c[1] >= h) return null; return YN.tileInfo(rt.tile(c[0], c[1])); };
+      var wallAt = function (x, y) { var t = tinfo(x, y); return !!(t && t.wall); };
+      var ground = function (x, y) { var t = tinfo(x, y); if (!t || !t.pass || t.water || t.hazard || t.slide || t.pit || t.ladder || t.kind === 'bridge') return false; var c = wr(x, y); return !(rt.fake && rt.fake[c[1] * w + c[0]]); };
+      var MG = WD.markGrid(rt), cut = WD.cutAny(rt);
+      var solidAt = function (x, y) { var c = wr(x, y); return c[0] >= 0 && c[1] >= 0 && c[0] < w && c[1] < h && MG.sol[c[1] * w + c[0]] > 0; };
+      // les portes qui ne bougent pas, et celles déjà placées : on garde ses distances
+      var placed = rt.marks.filter(function (m) { return isDoor(m) && todo.indexOf(m) < 0 && m.x >= 0 && m.y >= 0; }).map(function (m) { return [m.x, m.y]; });
+      var cheb = function (ax, ay, bx, by) { var dx = Math.abs(ax - bx), dy = Math.abs(ay - by); if (rt.wrap) { dx = Math.min(dx, w - dx); dy = Math.min(dy, h - dy); } return Math.max(dx, dy); };
+      var region = function (start) {
+        if (!start || start[0] < 0 || start[1] < 0 || start[0] >= w || start[1] >= h) return null;
+        var PG = WD.passGrid(rt, 'npc'), seen = new Uint8Array(w * h), q = [start], qi = 0; seen[start[1] * w + start[0]] = 1;
+        while (qi < q.length) { var c = q[qi++]; for (var k = 0; k < 4; k++) { var n = wr(c[0] + [1, -1, 0, 0][k], c[1] + [0, 0, 1, -1][k]); if (n[0] < 0 || n[1] < 0 || n[0] >= w || n[1] >= h) continue; var kk = n[1] * w + n[0]; if (seen[kk] || !PG[kk]) continue; seen[kk] = 1; q.push(n); } }
+        return { seen: seen, cells: q };
+      };
+      var anchorDone = !back || todo.indexOf(back) < 0;
+      var startOf = function () { return back && anchorDone ? WD.besideMark(rt, back) : (rt.spawnAt || (back ? WD.besideMark(rt, back) : WD.nearestOpen(rt, w >> 1, h >> 1))); };
+      var R = null, arrival = null, cand = [];
+      var buildCand = function () {
+        var st = startOf(); R = region(st); arrival = st; cand = [];
+        if (!R) return;
+        var cells = R.cells, step = cells.length > 6000 ? Math.ceil(cells.length / 6000) : 1;
+        for (var i = 0; i < cells.length; i += step) {
+          var x = cells[i][0], y = cells[i][1], k = y * w + x;
+          if (!ground(x, y) || cut[k] || WD.choke(rt, x, y) || MG.has(x, y)) continue;
+          // une case libre devant (en dessous), dans la zone qu'on atteint
+          var f = wr(x, y + 1); if (f[1] >= h || !R.seen[f[1] * w + f[0]] || solidAt(f[0], f[1])) continue;
+          if (MG.has(x - 1, y) || MG.has(x + 1, y) || MG.has(f[0], f[1])) continue;
+          var blk = 0; for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) if ((dx || dy) && (!ground(x + dx, y + dy) || solidAt(x + dx, y + dy))) blk++;
+          var pen = 0;
+          if (indoor) { if (wallAt(x, y - 1)) pen = 0; else if (wallAt(x - 1, y) || wallAt(x + 1, y)) pen = 4; else continue; }
+          else { if (blk > 3) continue; pen = blk * 1.5; }
+          var open = 0; if (!indoor) for (var oy = -2; oy <= 2; oy++) for (var ox = -2; ox <= 2; ox++) if (ground(x + ox, y + oy)) open++;
+          cand.push([x, y, pen, open, 0]);
+        }
+      };
+      buildCand();
+      var block = function (x, y) { for (var q = 0; q < cand.length; q++) if (!cand[q][4] && cheb(cand[q][0], cand[q][1], x, y) <= 1) cand[q][4] = 1; };
+      todo.forEach(function (m) {
+        if (!cand.length) return;
+        var isBack = m === back, lateral = !!m.def.lateral, best = -1, bs = -1e9;
+        for (var pass = 0; pass < 3 && best < 0; pass++) {
+          var minD = [3, 2, 1][pass], minA = [4, 3, 2][pass];
+          for (var i = 0; i < cand.length; i++) {
+            var c = cand[i]; if (c[4]) continue;
+            var dmin = 99; for (var j = 0; j < placed.length; j++) { var d0 = cheb(c[0], c[1], placed[j][0], placed[j][1]); if (d0 < dmin) dmin = d0; }
+            if (dmin < minD) continue;
+            var da = isBack || !arrival ? 99 : cheb(c[0], c[1], arrival[0], arrival[1]); if (da < minA) continue;
+            var edge = lateral ? Math.min(c[0], w - 1 - c[0]) / Math.max(1, w / 2) : 0; // un passage latéral, plutôt vers un bord
+            var sc = Math.min(dmin, 14) * 2 + Math.min(da, 10) * 0.6 - c[2] + c[3] * 0.12 - edge * 10 + r.next() * 3;
+            if (sc > bs) { bs = sc; best = i; }
+          }
+        }
+        if (best < 0) return;
+        var c2 = cand[best]; MG.move(m, c2[0], c2[1]); placed.push([c2[0], c2[1]]); block(c2[0], c2[1]);
+        if (isBack) { anchorDone = true; buildCand(); placed.forEach(function (p) { block(p[0], p[1]); }); }
+      });
+      WD.markFronts(rt);
+    },
+    /* la case devant chaque porte (où l'on se présente) : rien de solide ne s'y pose ensuite */
+    markFronts: function (rt) {
+      if (rt.inf || !rt.base) { rt._fronts = null; return; } // monde infini : pas de grille
+      var w = rt.w, h = rt.h, f = rt._fronts = new Uint8Array(w * h);
+      rt.marks.forEach(function (m) { if (!DOOR_TYPES[m.type] || m.x < 0 || m.y < 0 || m.x >= w || m.y >= h) return; var y = rt.wrap ? U.mod(m.y + 1, h) : m.y + 1; if (y < h) f[y * w + m.x] = 1; });
+    },
     /* passage obligatoire sur la carte nue ou avec ses objets solides */
     cutAny: function (rt) { var a = WD.cutCells(rt, true), b = WD.cutCells(rt); for (var i = 0; i < a.length; i++) a[i] |= b[i]; return a; },
     hangWallDecor: function (rt) {
@@ -374,7 +458,7 @@
         var best = -1, bk = 1e12;
         for (var c = 0; c < cand.length; c += 2) {
           var nx = cand[c], ny = cand[c + 1], dx = nx - m.x, dy = ny - m.y, r = Math.max(Math.abs(dx), Math.abs(dy));
-          if (r < 1 || r >= 60 || MG.has(nx, ny) || (m.solid && (cut[ny * w + nx] || near[ny * w + nx]))) continue;
+          if (r < 1 || r >= 60 || MG.has(nx, ny) || (m.solid && (cut[ny * w + nx] || near[ny * w + nx] || (rt._fronts && rt._fronts[ny * w + nx])))) continue;
           var sc = Math.abs(dx) * 3 + Math.abs(dy) + ((MG.has(nx - 1, ny) || MG.has(nx + 1, ny)) ? 50 : 0), key = r * 1e6 + sc; // l'anneau le plus proche d'abord, puis le meilleur score
           if (key < bk) { bk = key; best = c; }
         }
@@ -432,7 +516,7 @@
             var c2 = pl[r.int(Math.min(pl.length - 1, 3), pl.length - 1)];
             if (MG.has(c2[0], c2[1])) continue;
             if (U.dist(c2[0], c2[1], start[0], start[1]) < 2) continue;
-            if (m.solid && (choke(c2[0], c2[1]) || cutT[c2[1] * w + c2[0]] === 1)) continue;
+            if (m.solid && (choke(c2[0], c2[1]) || cutT[c2[1] * w + c2[0]] === 1 || (rt._fronts && rt._fronts[c2[1] * w + c2[0]]))) continue;
             MG.move(m, c2[0], c2[1]); moved = true; break;
           }
         });

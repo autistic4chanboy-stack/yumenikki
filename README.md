@@ -141,7 +141,7 @@ Les ambiances et effets sonores sont configurés au même endroit (`ambience`, `
 ```bash
 node tests/run.js
 ```
-Suite de tests automatisés (74 vérifications) : comptes demandés, références, accessibilité de chaque monde,
+Suite de tests automatisés (75 vérifications) : comptes demandés, références, accessibilité de chaque monde,
 placement des portes à pied, générateurs, sauvegarde et copie de secours, conditions d’heure réelle, maillons des
 arcs, fins, mode caractères, attribution réelle de chaque effet.
 
@@ -162,6 +162,11 @@ node tools/content_audit.js --list
 ```
 Pour chaque monde : ses énigmes, ses secrets écrits, ceux que le moteur creuse cette nuit, et les mondes à qui il en
 manque.
+
+```bash
+node tools/door_audit.js --nights 3
+```
+Où tombent les portes : collées à une autre, sur l’arrivée, sans place devant, seules au milieu d’une pièce, coincées.
 
 ```bash
 node tools/show_map.js W029 --night 3

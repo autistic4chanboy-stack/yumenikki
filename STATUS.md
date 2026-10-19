@@ -76,6 +76,12 @@ YouTube). Les emplacements `perso1` / `perso2` sont prêts pour des fichiers don
 **À savoir** : les répliques coréennes (Sud et Nord) et anglaises ont été écrites par IA et n’ont pas été relues par
 une personne dont c’est la langue ; le registre du Nord est soigné mais peut contenir des maladresses.
 
+## Correctif « portes mieux placées »
+
+| | Fait | Vérifié par |
+|---|---|---|
+| **Placement des portes posées au hasard** (portes, ascenseurs, escaliers, passages latéraux, portes qui n’apparaissent que plus tard) : dans un lieu fermé contre un mur, dehors sur un sol dégagé (pas dans un buisson ni contre l’eau), toujours avec une case libre devant pour s’y présenter, jamais collées à une autre porte ni sur l’arrivée, réparties sur la carte, les passages latéraux plutôt vers les bords ; la case devant chaque porte reste libre (meubles, objets muraux et objets posés au hasard n’y vont plus) ; une porte qui n’apparaît que plus tard compte déjà comme présente. Les portes placées à la main, celles des cachettes et les tableaux-portes ne bougent pas | sur 3 nuits, portes au hasard : seules au milieu d’une pièce 562 → **76**, collées à une autre 303 → **76**, sur l’arrivée 169 → **31**, sans place devant 99 → **5** (ce qui reste : de toutes petites pièces et deux mondes sans murs) | `tools/door_audit.js`, test « portes posées au hasard… », `reach_maps --nights 8` (0 injoignable) |
+
 ## Correctif « les mondes qui bouclent »
 
 | | Fait | Vérifié par |
@@ -108,7 +114,7 @@ une personne dont c’est la langue ; le registre du Nord est soigné mais peut 
 
 ## Ce qui a été exécuté
 
-- `node tests/run.js` : **74 / 74** vérifications réussies (sur les 400 mondes).
+- `node tests/run.js` : **75 / 75** vérifications réussies (sur les 400 mondes).
 - `node tools/validate.js` : 0 erreur, 0 avertissement, 0 référence cassée, 0 monde inaccessible, 2 170 passages valides,
   400 mondes construits sans erreur avec une arrivée libre.
 - `node tools/reach_maps.js --nights 12` : 396 mondes à carte vérifiés sur 12 nuits (4 752 constructions), 0 porte / effet / objet injoignable à pied, 0 arrivée enfermée.

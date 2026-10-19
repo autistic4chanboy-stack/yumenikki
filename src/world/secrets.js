@@ -150,11 +150,16 @@
       var seen = new Uint8Array(w * h), q0 = [a], qi = 0, PG = YN.world.passGrid(rt, 'player'); seen[a[1] * w + a[0]] = 1;
       while (qi < q0.length) { var c = q0[qi++]; for (var k = 0; k < 4; k++) { var nx = c[0] + D4[k][0], ny = c[1] + D4[k][1]; if (rt.wrap) { nx = U.mod(nx, w); ny = U.mod(ny, h); } else if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; if (seen[ny * w + nx] || !PG[ny * w + nx]) continue; seen[ny * w + nx] = 1; q0.push([nx, ny]); } }
       var near = function (m) { for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { var x = m.x + dx, y = m.y + dy; if (rt.wrap) { x = U.mod(x, w); y = U.mod(y, h); } if (x >= 0 && y >= 0 && x < w && y < h && seen[y * w + x]) return true; } return false; };
-      var nooks = null, r = YN.rng.make((H('final:' + rt.id) ^ 77) >>> 0);
+      var nooks = null, doorSpots = null, r = YN.rng.make((H('final:' + rt.id) ^ 77) >>> 0);
       rt.marks.forEach(function (m) {
         if ((!m.active && !m.def.spawned) || !(m.def.collectSet || m.def.storyItem || m.def.secretDoor || (m.type === 'effect' && m.def.give) || /^find_|^art_/.test(m.def.id || '') || (YN.DOOR_TYPES[m.type] && ((typeof m.def.at === 'string' && m.def.at.indexOf('random') === 0) || m.def.spawned)))) return;
         if (near(m)) return;
         if (!nooks) { var MG0 = YN.world.markGrid(rt), cutT = YN.world.cutAny(rt); nooks = []; for (var i = 0; i < q0.length; i++) { var cc = q0[i]; if (MG0.has(cc[0], cc[1]) || cutT[cc[1] * w + cc[0]] || YN.world.choke(rt, cc[0], cc[1])) continue; /* jamais dans un goulet : une porte solide le boucherait */ var bl = 0; for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { var xx = cc[0] + dx, yy = cc[1] + dy; if ((dx || dy) && (xx < 0 || yy < 0 || xx >= w || yy >= h || !PG[yy * w + xx])) bl++; } if (bl >= 4) nooks.push(cc); } if (!nooks.length) nooks = q0.slice(4).filter(function (c1) { return !MG0.has(c1[0], c1[1]) && !cutT[c1[1] * w + c1[0]] && !YN.world.choke(rt, c1[0], c1[1]); }); if (!nooks.length) nooks = q0.slice(4).filter(function (c1) { return !MG0.has(c1[0], c1[1]); }); }
+        // une porte ramenée à portée : sur un sol dégagé, une case libre devant, pas dans un coin (les objets, eux, vont dans les recoins)
+        if (YN.DOOR_TYPES[m.type] && !/^(hole|fall|path)$/.test(m.type)) {
+          if (!doorSpots) { var MG1 = YN.world.markGrid(rt), cut1 = YN.world.cutAny(rt); doorSpots = q0.filter(function (c1) { var x = c1[0], y = c1[1]; if (MG1.has(x, y) || MG1.has(x - 1, y) || MG1.has(x + 1, y) || cut1[y * w + x] || YN.world.choke(rt, x, y) || U.dist(x, y, a[0], a[1]) < 4) return false; if (y + 1 >= h || !seen[(y + 1) * w + x] || MG1.has(x, y + 1)) return false; var bl = 0; for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) { var xx = x + dx, yy = y + dy; if ((dx || dy) && (xx < 0 || yy < 0 || xx >= w || yy >= h || !PG[yy * w + xx])) bl++; } return bl <= 3; }); }
+          if (doorSpots.length) { var dp = doorSpots.splice(r.int(0, doorSpots.length - 1), 1)[0]; m.x = dp[0]; m.y = dp[1]; doorSpots = doorSpots.filter(function (c1) { return Math.max(Math.abs(c1[0] - dp[0]), Math.abs(c1[1] - dp[1])) > 2; }); return; }
+        }
         if (!nooks.length) return; var p = nooks.splice(r.int(0, nooks.length - 1), 1)[0]; m.x = p[0]; m.y = p[1];
       });
     },
