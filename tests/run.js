@@ -360,5 +360,18 @@ t('placement sur plusieurs nuits : labyrinthe, spirale, pièces à une seule ent
   eq(bad.length, 0, bad.slice(0, 6).join(' ; '));
 });
 
+t('mondes qui bouclent : on peut vraiment en faire le tour (passages aux bords)', function () {
+  freshDream(); var W = YN.data.worlds, closed = [], n = 0, ALLOWED = { W058: 'la tour de Penrose, fermée dans le vide' };
+  U.keys(W).filter(function (k) { return /^W\d{3}$/.test(k) && W[k].wrap && !W[k].inf; }).forEach(function (id) {
+    var rt = YN.world.build(id); n++;
+    var pass = function (x, y) { return YN.tileInfo(rt.tile(x, y)).pass; }, ex = 0, ey = 0;
+    for (var y = 0; y < rt.h; y++) if (pass(0, y) && pass(rt.w - 1, y)) ex++;
+    for (var x = 0; x < rt.w; x++) if (pass(x, 0) && pass(x, rt.h - 1)) ey++;
+    if (!ex && !ey && !ALLOWED[id]) closed.push(id);
+  });
+  eq(closed.length, 0, 'bords fermés : ' + closed.join(' '));
+  return n + ' mondes en boucle';
+});
+
 console.log('\n' + pass + ' réussis, ' + fail + ' échoués' + (fail ? ' : ' + fails.join(' ; ') : ''));
 process.exit(fail ? 1 : 0);

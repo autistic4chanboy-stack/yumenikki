@@ -201,21 +201,26 @@
       var CS = T.CS, vw = W / t, vh = H / t, x0 = cam.x - vw / 2, y0 = cam.y - vh / 2;
       var cx0 = Math.floor(x0 / CS), cx1 = Math.floor((x0 + vw) / CS), cy0 = Math.floor((y0 - 1.5) / CS), cy1 = Math.floor((y0 + vh + 1.5) / CS);
       var budget = Rn.buildBudget === undefined ? 4 : Rn.buildBudget, strips = [], water = [];
-      var nx = Math.ceil(rt.w / CS), ny = Math.ceil(rt.h / CS);
-      for (var cy = cy0; cy <= cy1; cy++) for (var cx = cx0; cx <= cx1; cx++) {
-        var wcx = cx, wcy = cy;
-        if (rt.wrap && !rt.inf) { wcx = U.mod(cx, nx); wcy = U.mod(cy, ny); }
-        else if (!rt.inf && (cx * CS > rt.w + 2 || cy * CS > rt.h + 2 || (cx + 1) * CS < -2 || (cy + 1) * CS < -3)) continue;
+      var nx = Math.ceil(rt.w / CS), ny = Math.ceil(rt.h / CS), wrapped = rt.wrap && !rt.inf;
+      // un monde qui boucle se répète tous les rt.w × rt.h cases, pas tous les nx × ny blocs : chaque copie est posée
+      // à sa vraie place et le dernier bloc (incomplet quand la taille n'est pas un multiple de 8) est coupé au bord
+      var spans = function (a0, a1, size, n) { var out = []; if (!wrapped) { for (var c = Math.floor(a0 / CS); c <= Math.floor(a1 / CS); c++) out.push([c, c * CS, CS]); return out; } for (var kk = Math.floor(a0 / size) - 1; kk <= Math.floor(a1 / size) + 1; kk++) for (var c2 = 0; c2 < n; c2++) { var st0 = kk * size + c2 * CS, len = Math.min(CS, size - c2 * CS); if (st0 + len < a0 || st0 > a1) continue; out.push([c2, st0, len]); } return out; };
+      var colsX = spans(x0, x0 + vw, rt.w, nx), rowsY = spans(y0 - 1.5, y0 + vh + 1.5, rt.h, ny);
+      for (var iy = 0; iy < rowsY.length; iy++) for (var ix = 0; ix < colsX.length; ix++) {
+        var wcx = colsX[ix][0], wcy = rowsY[iy][0], tx0c = colsX[ix][1], ty0c = rowsY[iy][1], cwT = colsX[ix][2], chT = rowsY[iy][2], cx = wcx, cy = wcy;
+        if (!wrapped && !rt.inf && (wcx * CS > rt.w + 2 || wcy * CS > rt.h + 2 || (wcx + 1) * CS < -2 || (wcy + 1) * CS < -3)) continue;
         var ch = T.get(rt, wcx, wcy, false);
         // un morceau manquant se peint ici, mais jamais plus de ~10 ms de peinture par image (sauf à l'arrivée)
         if (!ch || ch.stale) { if ((budget > 0 || !ch) && (Rn.buildMs < (Rn.warm ? Rn.warmBudget : 10) || (!ch && !Rn.anyDrawn && !Rn.warm))) { budget--; var tb = performance.now(); ch = T.get(rt, wcx, wcy, true) || ch; Rn.buildMs += performance.now() - tb; } }
         if (!ch) { Rn.missing++; continue; }
-        var sx = Math.round((cx * CS - cam.x) * t) + Math.floor(W / 2), sy = Math.round((cy * CS - cam.y) * t) + Math.floor(H / 2), k = t / T.tpx;
-        x.drawImage(ch.ground, sx, sy, CS * t, CS * t);
+        var sx = Math.round((tx0c - cam.x) * t) + Math.floor(W / 2), sy = Math.round((ty0c - cam.y) * t) + Math.floor(H / 2), k = t / T.tpx;
+        if (cwT === CS && chT === CS) x.drawImage(ch.ground, sx, sy, CS * t, CS * t);
+        else x.drawImage(ch.ground, 0, 0, cwT * T.tpx, chT * T.tpx, sx, sy, cwT * t, chT * t);
         if (ch.water) water.push([ch, sx, sy]);
         for (var i = 0; i < ch.strips.length; i++) {
-          var sp = ch.strips[i], row = sp.row + (cy - wcy) * CS;
-          strips.push({ row: row, img: sp.c, sx: sx, sy: Math.round((row + sp.oy - cam.y) * t) + Math.floor(H / 2), w: sp.c.width * k, h: sp.c.height * k });
+          var sp = ch.strips[i]; if (wrapped && sp.row >= rt.h) continue; // rangée d'après le bord : c'est la copie suivante qui la dessine
+          var row = sp.row + (ty0c - wcy * CS);
+          strips.push({ row: row, img: sp.c, sx: sx, sy: Math.round((row + sp.oy - cam.y) * t) + Math.floor(H / 2), w: (cwT === CS ? sp.c.width : Math.min(sp.c.width, cwT * T.tpx)) * k, h: sp.c.height * k, cw: cwT === CS ? 0 : Math.min(sp.c.width, cwT * T.tpx) });
         }
       }
       Rn.anyDrawn = true;
@@ -227,7 +232,7 @@
       list.sort(function (a, b) { return a.y - b.y; });
       strips.sort(function (a, b) { return a.row - b.row; });
       var si = 0, pd = null, hidden = false;
-      var drawStrip = function (s0) { x.drawImage(s0.img, Math.floor(s0.sx), Math.round(s0.sy), s0.w, s0.h); if (pd && !hidden && s0.sx < pd.px + pd.w * 0.65 && s0.sx + s0.w > pd.px + pd.w * 0.35 && s0.sy < pd.py + pd.h * 0.75 && s0.sy + s0.h * 0.6 > pd.py + pd.h * 0.25) hidden = true; };
+      var drawStrip = function (s0) { if (s0.cw) x.drawImage(s0.img, 0, 0, s0.cw, s0.img.height, Math.floor(s0.sx), Math.round(s0.sy), s0.w, s0.h); else x.drawImage(s0.img, Math.floor(s0.sx), Math.round(s0.sy), s0.w, s0.h); if (pd && !hidden && s0.sx < pd.px + pd.w * 0.65 && s0.sx + s0.w > pd.px + pd.w * 0.35 && s0.sy < pd.py + pd.h * 0.75 && s0.sy + s0.h * 0.6 > pd.py + pd.h * 0.25) hidden = true; };
       for (var j = 0; j < list.length; j++) {
         var d = list[j];
         while (si < strips.length && strips[si].row <= Math.floor(d.y)) drawStrip(strips[si++]);
@@ -314,12 +319,13 @@
     collect: function (rt, g, x0, y0, vw, vh, t) {
       var out = [], fr = Math.floor(Rn.t * 6), cam = Rn.view(), T = YN.terrain;
       var inView = function (wx, wy) { var dx = wx - cam.x, dy = wy - cam.y; if (rt.wrap && !rt.inf) { dx = Rn.wrapD(dx, rt.w); dy = Rn.wrapD(dy, rt.h); } return Math.abs(dx) < vw / 2 + 3 && dy > -vh / 2 - 1 && dy < vh / 2 + 4; };
+      var uy = function (y) { return rt.wrap && !rt.inf ? cam.y + Rn.wrapD(y - cam.y, rt.h) : y; }; // profondeur : la copie la plus proche de la caméra
       var place = function (img, ax, ay, fx, fy, scale) { var p = Rn.toScreen(rt, fx, fy), k = (scale || 1) * t / T.tpx; return { px: Math.round(p[0] - ax * k), py: Math.round(p[1] - ay * k), w: Math.round(img.width * k), h: Math.round(img.height * k) }; };
       var tx0 = Math.floor(x0) - 2, tx1 = Math.ceil(x0 + vw) + 2, ty0 = Math.floor(y0) - 1, ty1 = Math.ceil(y0 + vh) + 4;
       for (var ty = ty0; ty <= ty1; ty++) for (var tx = tx0; tx <= tx1; tx++) {
         var ch = rt.tile(tx, ty), info = YN.tileInfo(ch);
         if (!(info.tall || info.obj)) continue;
-        var dec = rt.tallDecor(ch, tx, ty);
+        var dec = rt.wrap && !rt.inf ? rt.tallDecor(ch, U.mod(tx, rt.w), U.mod(ty, rt.h)) : rt.tallDecor(ch, tx, ty); // même arbre de part et d'autre du raccord
         if (!dec) continue;
         var pl = place(dec.c, dec.ax, dec.ay, tx + 0.5, ty + 0.92); pl.img = dec.c; pl.y = ty + 0.9; out.push(pl);
       }
@@ -332,7 +338,7 @@
         if (!dd) continue;
         var wall = YN.decor.isWall(m.look);
         var p2 = place(dd.c, dd.ax, dd.ay, m.x + 0.5 + (m.ox || 0), m.y + 0.92 + (m.oy || 0));
-        p2.img = dd.c; p2.y = m.y + (m.zy !== undefined ? m.zy : (wall ? 0.995 : 0.9)); p2.alpha = m.alpha; out.push(p2);
+        p2.img = dd.c; p2.y = uy(m.y + (m.zy !== undefined ? m.zy : (wall ? 0.995 : 0.9))); p2.alpha = m.alpha; out.push(p2);
       }
       for (var j = 0; j < rt.ents.length; j++) {
         var e = rt.ents[j];
@@ -340,17 +346,17 @@
         var ex = e.fx + 0.5 + (e.jx || 0), ey = e.fy + 0.9 + (e.jy || 0);
         if (!inView(ex, ey)) continue;
         var img = YN.entities.sprite(e, fr); if (!img) continue;
-        var p3 = place(img, img.ax || img.width / 2, img.ay || img.height, ex, ey + (e.def.oy || 0) - (e.jz || 0)); p3.img = img; p3.y = e.fy + 0.88 + (e.jy || 0); p3.alpha = e.alphaNow; var lk3 = e.state.look || e.def.look; if (lk3 && lk3.fx) { p3.fx = lk3.fx; p3.ent = e; } out.push(p3);
+        var p3 = place(img, img.ax || img.width / 2, img.ay || img.height, ex, ey + (e.def.oy || 0) - (e.jz || 0)); p3.img = img; p3.y = uy(e.fy + 0.88 + (e.jy || 0)); p3.alpha = e.alphaNow; var lk3 = e.state.look || e.def.look; if (lk3 && lk3.fx) { p3.fx = lk3.fx; p3.ent = e; } out.push(p3);
       }
       var pl2 = g.player;
       if (!pl2.invisible) {
         var pimg = g.playerSprite(), sc = pl2.small ? 0.55 : 1;
         var fx2 = rt.view === 'side' ? pl2.side.px / 16 + 0.5 : pl2.px, fy2 = rt.view === 'side' ? pl2.side.py / 16 + 1.45 : pl2.py;
-        var p4 = place(pimg, pimg.ax, pimg.ay, fx2, fy2 - (pl2.z || 0), sc); p4.img = pimg; p4.y = fy2 - 0.05; p4.player = true; p4.alpha = pl2.alpha; var pfx = YN.effects && YN.game.equipped && YN.effects.look(YN.game.equipped()).fx; if (pfx) p4.fx = pfx; out.push(p4);
+        var p4 = place(pimg, pimg.ax, pimg.ay, fx2, fy2 - (pl2.z || 0), sc); p4.img = pimg; p4.y = uy(fy2 - 0.05); p4.player = true; p4.alpha = pl2.alpha; var pfx = YN.effects && YN.game.equipped && YN.effects.look(YN.game.equipped()).fx; if (pfx) p4.fx = pfx; out.push(p4);
       }
       var ws = YN.witches ? YN.witches.drawList(rt.id) : [];
       if (YN.priestess) ws = ws.concat(YN.priestess.drawList(rt.id));
-      ws.forEach(function (w) { var p5 = place(w.img, w.img.ax, w.img.ay, w.x + 0.5, w.y + 0.9); p5.img = w.img; p5.y = w.y + 0.9; p5.alpha = w.alpha; out.push(p5); });
+      ws.forEach(function (w) { var p5 = place(w.img, w.img.ax, w.img.ay, w.x + 0.5, w.y + 0.9); p5.img = w.img; p5.y = uy(w.y + 0.9); p5.alpha = w.alpha; out.push(p5); });
       return out;
     },
 
@@ -418,7 +424,7 @@
       for (var cy = cy0 - R; cy <= cy1 + R; cy++) for (var cx = cx0 - R; cx <= cx1 + R; cx++) {
         if (cx >= cx0 && cx <= cx1 && cy >= cy0 && cy <= cy1) continue;
         var wcx = cx, wcy = cy;
-        if (rt.wrap && !rt.inf) { wcx = U.mod(cx, nx); wcy = U.mod(cy, ny); }
+        if (rt.wrap && !rt.inf) { wcx = Math.floor(U.mod(cx * T.CS, rt.w) / T.CS); wcy = Math.floor(U.mod(cy * T.CS, rt.h) / T.CS); }
         else if (!rt.inf && (cx < 0 || cy < 0 || cx >= nx || cy >= ny)) continue;
         var c0 = T.get(rt, wcx, wcy, false); if (c0 && !c0.stale) continue;
         var mx = (cx0 + cx1) / 2, my = (cy0 + cy1) / 2, dx = cx - mx, dy = cy - my;
@@ -434,7 +440,8 @@
       for (var ty = y0; ty <= y1; ty++) for (var tx = x0; tx <= x1; tx++) {
         var ch = rt.tile(tx, ty); if (!ch) continue; var ti = YN.tileInfo(ch); if (!ti.water) continue;
         for (var k = 0; k < 2; k++) {
-          var h = P.pxhash ? P.pxhash(tx * 3 + k, ty, 17) : ((tx * 31 + ty * 17 + k) % 97) / 97, per = 2.6 + h * 2.2, ph = ((T + h * per) % per) / per;
+          var hx = rt.wrap && !rt.inf ? U.mod(tx, rt.w) : tx, hy = rt.wrap && !rt.inf ? U.mod(ty, rt.h) : ty; // le même reflet de part et d'autre du raccord
+          var h = P.pxhash ? P.pxhash(hx * 3 + k, hy, 17) : ((hx * 31 + hy * 17 + k) % 97) / 97, per = 2.6 + h * 2.2, ph = ((T + h * per) % per) / per;
           if (ph > 0.55) continue;
           var a = Math.sin(ph / 0.55 * Math.PI), p = Rn.toScreen(rt, tx + 0.15 + (h * 7 % 1) * 0.6 + ph * 0.18, ty + 0.25 + (h * 13 % 1) * 0.5);
           x.fillStyle = 'rgba(235,245,255,' + (0.5 * a).toFixed(3) + ')'; x.fillRect(Math.round(p[0]), Math.round(p[1]), sw, 1);

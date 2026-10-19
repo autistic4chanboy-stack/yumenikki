@@ -101,6 +101,13 @@
         }
       });
     });
+    // un monde immense qui boucle : à chaque rangée (et chaque colonne) de quartiers, un passage traverse la bande
+    // extérieure jusqu'au bord, à la même hauteur des deux côtés — on sort à droite, on revient par la gauche
+    if (o.wrap) {
+      var open = function (x, y, dx, dy) { for (var k = 0; k < Math.max(w, h); k++) { var cx = x + dx * k, cy = y + dy * k; if (cx < 0 || cy < 0 || cx >= w || cy >= h) return; if (k > band + 1 && passCh(g[cy][cx])) return; g[cy][cx] = floor; } };
+      for (var jj = 0; jj < rws; jj++) { var yy2 = band + jj * (dh + band) + r.int(2, Math.max(2, dh - 3)); open(0, yy2, 1, 0); open(w - 1, yy2, -1, 0); }
+      for (var ii = 0; ii < cols; ii++) { var xx2 = band + ii * (dw + band) + r.int(2, Math.max(2, dw - 3)); open(xx2, 0, 0, 1); open(xx2, h - 1, 0, -1); }
+    }
     G.connectRegions(g, floor, r);
     if (bo.decor) G.sprinkle(g, r, floor, bo.decor, (bo.decorRate || 0.03) * 0.7);
     return g.map(function (row) { return row.join(''); });

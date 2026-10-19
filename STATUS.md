@@ -76,6 +76,13 @@ YouTube). Les emplacements `perso1` / `perso2` sont prêts pour des fichiers don
 **À savoir** : les répliques coréennes (Sud et Nord) et anglaises ont été écrites par IA et n’ont pas été relues par
 une personne dont c’est la langue ; le registre du Nord est soigné mais peut contenir des maladresses.
 
+## Correctif « les mondes qui bouclent »
+
+| | Fait | Vérifié par |
+|---|---|---|
+| **Raccord des mondes qui bouclent** : le terrain est dessiné par blocs de 8 × 8 cases ; quand la largeur ou la hauteur d’un monde n’était pas un multiple de 8 (28 des 30 mondes en boucle), le dessin se répétait tous les 32 cases au lieu de 30 (par exemple) : le sol se décalait au raccord et les textures « sautaient » en le franchissant. Chaque copie du monde est maintenant posée à sa vraie place et le dernier bloc est coupé au bord. Les arbres et grands décors, et les reflets de l’eau, ne changent plus de variante d’un côté à l’autre ; l’ordre de profondeur près du raccord vertical est juste | image identique au pixel près quand la caméra est décalée d’une largeur ou d’une hauteur de monde, dans les **30** mondes en boucle (jusqu’à 52 % de pixels décalés avant) | `tests/browser_seams.js` (`__seams()` dans la page du jeu) |
+| **Bords fermés** : deux couloirs « sans fin » (W043, W154) étaient murés à chaque bout et les six mondes immenses déclarés en boucle étaient entourés d’une bande pleine : on ne pouvait jamais en faire le tour. Les couloirs s’ouvrent aux deux bouts ; le générateur des mondes immenses perce un passage par rangée et par colonne de quartiers, à la même hauteur des deux côtés | traversée du bord vérifiée en jeu (W043, W154, W051, W106) | test « mondes qui bouclent : on peut vraiment en faire le tour » |
+
 ## Passe « cohérence, placement, psychédélique, énigmes et secrets partout, habitants terrifiants »
 
 | | Fait | Vérifié par |
@@ -101,7 +108,7 @@ une personne dont c’est la langue ; le registre du Nord est soigné mais peut 
 
 ## Ce qui a été exécuté
 
-- `node tests/run.js` : **73 / 73** vérifications réussies (sur les 400 mondes).
+- `node tests/run.js` : **74 / 74** vérifications réussies (sur les 400 mondes).
 - `node tools/validate.js` : 0 erreur, 0 avertissement, 0 référence cassée, 0 monde inaccessible, 2 170 passages valides,
   400 mondes construits sans erreur avec une arrivée libre.
 - `node tools/reach_maps.js --nights 12` : 396 mondes à carte vérifiés sur 12 nuits (4 752 constructions), 0 porte / effet / objet injoignable à pied, 0 arrivée enfermée.

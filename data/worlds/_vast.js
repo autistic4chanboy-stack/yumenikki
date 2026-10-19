@@ -16,7 +16,7 @@
     var d = W[id]; if (!d || !d.gen || d.inf) return;
     var g = d.gen, v = V[id];
     d.gen = { type: 'vast', w: Math.min(240, Math.round((g.w || 60) * v[0])), h: Math.min(180, Math.round((g.h || 44) * v[0])),
-      opts: { base: g.type, baseOpts: g.opts || g, cols: v[1], rows: v[2], band: v[3] }, post: g.post, stamps: g.stamps, seed: g.seed };
+      opts: { base: g.type, baseOpts: g.opts || g, cols: v[1], rows: v[2], band: v[3], wrap: !!d.wrap }, post: g.post, stamps: g.stamps, seed: g.seed };
     d.vast = true;
     d.info = d.info || {};
     d.info.rules = (d.info.rules || []).concat(['Immense, and drawn again on every visit: its districts, lakes, clearings and walls are never in the same place twice.']);

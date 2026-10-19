@@ -141,7 +141,7 @@ Les ambiances et effets sonores sont configurés au même endroit (`ambience`, `
 ```bash
 node tests/run.js
 ```
-Suite de tests automatisés (75 vérifications) : comptes demandés, références, accessibilité de chaque monde,
+Suite de tests automatisés (74 vérifications) : comptes demandés, références, accessibilité de chaque monde,
 placement des portes à pied, générateurs, sauvegarde et copie de secours, conditions d’heure réelle, maillons des
 arcs, fins, mode caractères, attribution réelle de chaque effet.
 
@@ -176,6 +176,7 @@ Régénère `PROGRESSION.md` (la marche à suivre complète, avec spoilers) depu
 
 `tests/browser_smoke.js` (avec `tests/dev_harness.js`) traverse tous les mondes dans le vrai navigateur : à charger
 dans la console de la page du jeu, puis `await __smoke('W001', 'W200')` et `__smokeReport()`.
+`tests/browser_seams.js` vérifie au pixel près le raccord des 30 mondes qui bouclent : `__seams()`.
 
 ## Organisation
 
