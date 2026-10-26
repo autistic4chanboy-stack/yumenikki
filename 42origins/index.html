@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>42 Origins — voir la mémoire en C, Python et assembleur</title>
+<meta name="description" content="Visualiseur pas à pas de code C, Python et assembleur x86-64 : pile, tas, cases mémoire, registres du processeur, et 30 missions pour apprendre.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="top">
+  <a class="brand" href="#" id="brand" title="Accueil">
+    <span class="logo42" aria-hidden="true"><i>4</i><i>2</i></span>
+    <span class="brand-t">ORIGINS</span>
+  </a>
+  <nav class="seg langs" aria-label="Langage">
+    <button data-lang="c" type="button"><b>C</b></button>
+    <button data-lang="py" type="button"><b>Python</b></button>
+    <button data-lang="asm" type="button"><b>ASM</b><small>x86-64</small></button>
+  </nav>
+  <nav class="seg modes" aria-label="Mode">
+    <button data-mode="missions" type="button">🎯 Missions</button>
+    <button data-mode="sandbox" type="button">🧪 Bac à sable</button>
+  </nav>
+  <div class="grow"></div>
+  <span id="xp" class="xp" title="Missions réussies"></span>
+  <button id="btn-help" class="icon-btn" type="button" title="Aide et raccourcis">?</button>
+</header>
+
+<main id="app">
+  <aside id="side" class="col"></aside>
+
+  <section id="center" class="col">
+    <div class="panel editor-panel">
+      <div class="panel-h">
+        <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+        <span id="file-name" class="file-name">main.c</span>
+        <div class="grow"></div>
+        <label class="toggle" title="Réexécute tout le programme à chaque modification : idéal pour écrire ton code petit à petit">
+          <input type="checkbox" id="live"> <span>Direct</span>
+        </label>
+        <button id="btn-reset-code" class="ghost sm" type="button" title="Remettre le code de départ">↺ Code initial</button>
+      </div>
+      <div id="editor"></div>
+      <div id="dirty" class="dirty" hidden>
+        <span>✎ Code modifié pendant l’exécution.</span>
+        <button id="btn-replay" type="button" class="sm">⟳ Rejouer jusqu’ici</button>
+        <button id="btn-fresh" type="button" class="ghost sm">Repartir de zéro</button>
+      </div>
+      <div id="compile-msg" class="compile-msg" hidden></div>
+    </div>
+
+    <div id="toolbar" class="toolbar">
+      <div class="tb-group">
+        <button id="btn-run" class="primary" type="button" title="Exécuter / continuer (F5 ou Ctrl+Entrée)">▶ <span>Exécuter</span></button>
+        <button id="btn-pause" type="button" title="Pause (Échap)" hidden>⏸ <span>Pause</span></button>
+        <button id="btn-step" type="button" title="Exécute la ligne verte, en entrant dans les fonctions (F10)">⤓ <span>Pas</span></button>
+        <button id="btn-over" type="button" title="Exécute la ligne verte sans entrer dans les fonctions (Maj+F10)">↷ <span>Par-dessus</span></button>
+        <button id="btn-out" type="button" title="Termine la fonction en cours (F8)">⤴ <span>Sortir</span></button>
+        <button id="btn-back" type="button" title="Revenir d’un pas (F9)">⤒ <span>Retour</span></button>
+        <button id="btn-restart" class="ghost" type="button" title="Recommencer depuis le début">⟲</button>
+      </div>
+      <div class="tb-speed">
+        <span class="lbl">🐢</span>
+        <input type="range" id="speed" min="0" max="8" step="1" value="3" aria-label="Vitesse d’exécution">
+        <span class="lbl">🐇</span>
+        <span id="speed-val" class="speed-val">2 pas/s</span>
+      </div>
+      <div id="status" class="status"></div>
+    </div>
+
+    <div class="panel explain-panel">
+      <div class="panel-h"><span class="ph-ico">💡</span> Ce qui vient de se passer <div class="grow"></div><span id="next-line" class="next-line"></span></div>
+      <div id="explain" class="explain"></div>
+    </div>
+
+    <div class="panel io-panel">
+      <div class="panel-h tabs" role="tablist">
+        <button class="tab on" data-tab="out" type="button">🖥 Sortie</button>
+        <button class="tab" data-tab="in" type="button">⌨ Entrée (stdin)</button>
+        <button class="tab" data-tab="files" type="button">📄 Fichiers</button>
+        <div class="grow"></div>
+        <span id="exit-badge" class="exit-badge"></span>
+      </div>
+      <div class="tab-body" data-body="out"><pre id="term" class="term"></pre></div>
+      <div class="tab-body" data-body="in" hidden>
+        <p class="help-line">Ce que le programme lira avec <code>read(0, …)</code>, <code>get_next_line(0)</code>, <code>input()</code> ou l’appel système <code>read</code>. Une ligne = un appui sur Entrée.</p>
+        <textarea id="stdin" class="stdin" spellcheck="false" placeholder="Tape ici le texte envoyé au programme…"></textarea>
+      </div>
+      <div class="tab-body" data-body="files" hidden>
+        <p class="help-line">Fichier virtuel ouvrable avec <code>open("texte.txt", O_RDONLY)</code> (C) ou l’appel système <code>open</code> (ASM).</p>
+        <textarea id="file-txt" class="stdin" spellcheck="false"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <section id="right" class="col">
+    <div id="cpu" class="panel cpu-panel" hidden></div>
+    <div class="panel mem-panel">
+      <div class="panel-h">
+        <span class="ph-ico">🧠</span> Mémoire
+        <div class="grow"></div>
+        <div class="legend">
+          <span class="lg stack">stack</span><span class="lg heap">heap</span><span class="lg data">data</span><span class="lg rodata">rodata</span>
+          <span class="lg rd">lu</span><span class="lg wr">écrit</span>
+        </div>
+      </div>
+      <div id="mem" class="mem"></div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="modal" class="modal" hidden></div>
+<noscript>42 Origins a besoin de JavaScript.</noscript>
+
+<script src="js/util.js"></script>
+<script src="js/engine_c.js"></script>
+<script src="js/engine_py.js"></script>
+<script src="js/engine_asm.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/memview.js"></script>
+<script src="js/cpuview.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/missions_c.js"></script>
+<script src="js/missions_py.js"></script>
+<script src="js/missions_asm.js"></script>
+<script src="js/examples.js"></script>
+<script src="js/judge.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

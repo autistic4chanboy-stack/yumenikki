@@ -208,3 +208,9 @@ STATUS.md             état réel de l’implémentation
 - `STATUS.md` — ce qui est fait, testé, et ce qui ne l’est pas.
 - `docs/bible.md` — la bible de conception.
 - `docs/secrets.md` — les secrets (spoilers lourds).
+
+---
+
+## 42 Origins (visualiseur de code)
+
+Le dossier [`42origins/`](42origins/README.md) contient un projet indépendant : un visualiseur pas à pas de code C, Python et assembleur x86-64 (pile, tas, registres du processeur) avec 30 missions. Ouvrir `42origins/index.html`.
