@@ -16,10 +16,13 @@
     <span class="logo42" aria-hidden="true"><i>4</i><i>2</i></span>
     <span class="brand-t">ORIGINS</span>
   </a>
-  <nav class="seg langs" aria-label="Langage">
+  <button id="btn-home" class="home-btn" type="button" title="Accueil">🏠</button>
+  <nav class="seg langs" aria-label="Domaine">
     <button data-lang="c" type="button"><b>C</b></button>
     <button data-lang="py" type="button"><b>Python</b></button>
-    <button data-lang="asm" type="button"><b>ASM</b><small>x86-64</small></button>
+    <button data-lang="asm" type="button"><b>ASM</b></button>
+    <button data-lang="cobol" type="button"><b>COBOL</b></button>
+    <button data-lang="cyber" type="button"><b>Cyber</b></button>
   </nav>
   <nav class="seg modes" aria-label="Mode">
     <button data-mode="missions" type="button">🎯 Missions</button>
@@ -27,8 +30,9 @@
   </nav>
   <div class="grow"></div>
   <label class="toggle adv-toggle" title="Affiche les outils avancés : vitesse, pas à pas fin, octets, pipeline du processeur…"><input type="checkbox" id="opt-adv"> <span>Outils avancés</span></label>
-  <button id="btn-side" class="ghost sm adv" type="button" title="Masquer / afficher le panneau de gauche pour agrandir la mémoire">◧ Panneau</button>
-  <span id="xp" class="xp" title="Missions réussies"></span>
+  <button id="btn-side" class="ghost sm adv" type="button" title="Masquer / afficher le panneau de gauche">◧ Panneau</button>
+  <button id="btn-rank" class="rank-btn" type="button" title="Classement">🏆</button>
+  <button id="btn-profile" class="profile-btn" type="button" title="Mon profil"><span id="xp-av">🦊</span><span id="xp" class="xp"></span></button>
   <button id="btn-help" class="icon-btn" type="button" title="Aide et raccourcis">?</button>
 </header>
 
@@ -105,7 +109,7 @@
     <div id="cpu" class="panel cpu-panel" hidden></div>
     <div class="panel mem-panel">
       <div class="panel-h">
-        <span class="ph-ico">🧠</span> Mémoire
+        <span class="ph-ico" id="mem-ico">🧠</span> <span id="mem-title">Mémoire</span>
         <div class="grow"></div>
         <div class="mem-tools adv">
           <label class="toggle" title="Afficher les flèches des pointeurs (sinon : au survol)"><input type="checkbox" id="opt-wires" checked> <span>Flèches</span></label>
@@ -120,6 +124,7 @@
   </section>
 </main>
 
+<div id="home" class="home" hidden></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <div id="modal" class="modal" hidden></div>
 <noscript>42 Origins a besoin de JavaScript.</noscript>
@@ -128,9 +133,13 @@
 <script src="js/engine_c.js"></script>
 <script src="js/engine_py.js"></script>
 <script src="js/engine_asm.js"></script>
+<script src="js/engine_cobol.js"></script>
+<script src="js/engine_cyber.js"></script>
 <script src="js/editor.js"></script>
 <script src="js/memview.js"></script>
 <script src="js/cpuview.js"></script>
+<script src="js/cyberview.js"></script>
+<script src="js/profile.js"></script>
 <script src="js/scenes.js"></script>
 <script src="js/missions_c.js"></script>
 <script src="js/missions_py.js"></script>
@@ -142,6 +151,10 @@
 <script src="js/missions_asm_1.js"></script>
 <script src="js/missions_asm_2.js"></script>
 <script src="js/chapters.js"></script>
+<script src="js/missions_cobol.js"></script>
+<script src="js/missions_cyber.js"></script>
+<script src="js/exam.js"></script>
+<script src="js/home.js"></script>
 <script src="js/examples.js"></script>
 <script src="js/judge.js"></script>
 <script src="js/app.js"></script>

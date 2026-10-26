@@ -13,8 +13,11 @@
   var LANG = {
     c: { file: 'main.c', name: 'C', icon: 'C' },
     py: { file: 'main.py', name: 'Python', icon: 'Py' },
-    asm: { file: 'main.s', name: 'Assembleur x86-64', icon: 'ASM' }
+    asm: { file: 'main.s', name: 'Assembleur x86-64', icon: 'ASM' },
+    cobol: { file: 'main.cob', name: 'COBOL', icon: 'COB' },
+    cyber: { file: 'charge.txt', name: 'Cybersécurité', icon: 'SEC', cyber: true }
   };
+  var DOMAINS = ['c', 'py', 'asm', 'cobol', 'cyber'];
   var SPEEDS = [
     { l: '0,5 pas/s', ms: 2000 }, { l: '1 pas/s', ms: 1000 }, { l: '2 pas/s', ms: 500 }, { l: '4 pas/s', ms: 250 },
     { l: '8 pas/s', ms: 125 }, { l: '20 pas/s', ms: 50 }, { l: '60 pas/s', ms: 16 }, { l: '300 pas/s', ms: 0, per: 5 }, { l: 'instantané', ms: 0, per: Infinity }
@@ -32,7 +35,7 @@
     m: null, dirty: false, running: false, timer: null, raf: 0,
     bps: new Set(), lastLine: 0, compileErr: null,
     speed: store.get('speed', 3), live: store.get('live', false),
-    progress: store.get('progress', {}), unlocked: store.get('unlocked', false),
+    progress: O42.profile.load(), unlocked: store.get('unlocked', false),
     hintsShown: {}, results: null, won: {}, sceneCache: {}, fails: {}, openCh: {}
   };
 
@@ -62,6 +65,9 @@
     $('#btn-fresh').addEventListener('click', function () { pause(); restart(); });
     $('#btn-reset-code').addEventListener('click', function () { resetCode(false); });
     $('#btn-help').addEventListener('click', help);
+    $('#btn-home').addEventListener('click', function () { O42.home.show(); });
+    $('#btn-profile').addEventListener('click', function () { O42.home.profile(); });
+    $('#btn-rank').addEventListener('click', function () { O42.home.leaderboard(); });
     var adv = document.getElementById('opt-adv');
     adv.checked = store.get('adv', false);
     document.body.classList.toggle('simple', !adv.checked);
@@ -77,7 +83,7 @@
       document.body.classList.toggle('no-side', on); store.set('noSide', on);
       setTimeout(function () { if (S.m) render({ scroll: false }); }, 50);
     });
-    $('#brand').addEventListener('click', function (e) { e.preventDefault(); welcome(); });
+    $('#brand').addEventListener('click', function (e) { e.preventDefault(); O42.home.show(); });
     var ow = document.getElementById('opt-wires'), ob = document.getElementById('opt-bytes');
     ow.checked = store.get('wires', true); ob.checked = store.get('bytes', false);
     mem.wires = ow.checked; mem.bytes = ob.checked;
@@ -122,6 +128,11 @@
     el['file-name'].textContent = LANG[lang].file;
     el.cpu.hidden = lang !== 'asm';
     document.body.dataset.lang = lang;
+    document.body.classList.toggle('cyber', lang === 'cyber');
+    S.exam = null;
+    var mt = document.getElementById('mem-title'), mi0 = document.getElementById('mem-ico');
+    if (mt) { mt.textContent = lang === 'cyber' ? 'Cible' : 'Mémoire'; if (mi0) mi0.textContent = lang === 'cyber' ? '🎯' : '🧠'; }
+    $('#btn-run span').textContent = lang === 'cyber' ? 'Lancer l’attaque' : 'Exécuter';
     S.results = null;
     S.m = null; S.compileErr = null; S.sceneCache = {};
     if (mode === 'missions') {
@@ -169,9 +180,9 @@
   function unlocked(lang, i) { var m = O42.missions[lang][i]; return !!m && chapterOpen(lang, m.ch); }
   function firstTodo(lang) { var l = O42.missions[lang]; for (var i = 0; i < l.length; i++) if (!S.progress[l[i].id] && unlocked(lang, i)) return i; return 0; }
   function xp() {
-    var n = 0, t = 0;
-    ['c', 'py', 'asm'].forEach(function (l) { O42.missions[l].forEach(function (m) { t++; if (S.progress[m.id]) n++; }); });
-    el.xp.textContent = '★ ' + n + ' / ' + t;
+    var P = O42.profile, stars = P.total(S.progress);
+    el.xp.textContent = '★ ' + stars;
+    var av = document.getElementById('xp-av'); if (av) av.textContent = P.me().avatar;
   }
 
   /* ---------------------------------------------------------------- panneau latéral */
@@ -197,6 +208,9 @@
             var m = list[i], ok = !!S.progress[m.id];
             h += '<button class="mrow' + (ok ? ' done' : '') + (i === cur0 ? ' cur' : '') + (m.final ? ' final' : '') + '" data-i="' + i + '" type="button"><span class="mr-n">' + (ok ? '✓' : m.ord) + '</span><span class="mr-t">' + U.esc(m.title) + (m.final ? ' <em>contrat final</em>' : '') + '</span><span class="mr-s">' + stars(m.stars) + '</span></button>';
           });
+          var exUnlocked = O42.exam.unlocked(S.progress, L, k), exPassed = O42.exam.passed(S.progress, L, k);
+          h += '<button class="examrow' + (exPassed ? ' done' : exUnlocked ? ' ready' : ' locked') + '" data-k="' + k + '" type="button"' + (exUnlocked ? '' : ' disabled') + '>' +
+            '<span class="mr-n">🎖</span><span class="mr-t">Examen chronométré' + (exPassed ? ' <em>réussi</em>' : exUnlocked ? ' <em>prêt</em>' : '') + '</span><span class="mr-s">' + (exUnlocked ? '⏱ 3:00' : '🔒') + '</span></button>';
           h += '</div>';
         }
         h += '</div>';
@@ -204,6 +218,7 @@
       h += '</div>' + (S.unlocked ? '' : '<button class="unlock-all" type="button" id="unlock-all">Tout débloquer (mode enseignant)</button>') + '</div>';
       el.side.innerHTML = h;
       $$('.mrow', el.side).forEach(function (b) { b.addEventListener('click', function () { go(L, 'missions', +b.dataset.i); }); });
+      $$('.examrow:not([disabled])', el.side).forEach(function (b) { b.addEventListener('click', function () { O42.exam.start(L, +b.dataset.k); }); });
       $$('.chap-h', el.side).forEach(function (b) { b.addEventListener('click', function () { var k = +b.dataset.k; S.openCh[L] = S.openCh[L] === k ? -1 : k; side(); }); });
       $('#m-continue').addEventListener('click', function () { go(L, 'missions', cur0); });
       var ua = $('#unlock-all'); if (ua) ua.addEventListener('click', function () { S.unlocked = true; store.set('unlocked', true); side(); });
@@ -346,8 +361,9 @@
 
   /* ---------------------------------------------------------------- machine */
   function opts() {
-    var files = { 'texte.txt': el['file-txt'].value };
-    return { stdin: el.stdin.value, files: files };
+    var o = { stdin: el.stdin.value, files: { 'texte.txt': el['file-txt'].value } };
+    if (S.lang === 'cyber' && S.mode === 'missions') o.cyber = mission().cyber;
+    return o;
   }
   function fresh() {
     var m = O42.engines[S.lang].create(ed.value(), opts());
@@ -507,7 +523,8 @@
     el['next-line'].innerHTML = m && !m.done ? 'prochaine : <b>ligne ' + m.line + '</b> · ' + U.esc((srcLines[m.line - 1] || '').trim().slice(0, 60)) : '';
     // console
     term(m);
-    // mémoire et processeur
+    // mémoire / cible / processeur
+    if (S.lang === 'cyber') { O42.CyberView.render(document.getElementById('mem'), m, ce); status(); buttons(); renderScene(); return; }
     if (m) {
       if (!o.fast || !mem.t || performance.now() - mem.t > 120) { mem.render(m.view(), { lang: S.lang, scroll: o.scroll }); mem.t = performance.now(); }
       if (S.lang === 'asm') cpu.render(m, { anim: SPEEDS[S.speed].ms ? Math.min(SPEEDS[S.speed].ms * 0.8, 700) : 120, animate: !o.fast });
@@ -562,7 +579,8 @@
     var m = S.m, can = !!m && !S.compileErr;
     $('#btn-run').hidden = S.running;
     $('#btn-pause').hidden = !S.running;
-    $('#btn-run span').textContent = m && m.steps > 0 && !m.done ? 'Continuer' : 'Exécuter';
+    $('#btn-run span').textContent = S.lang === 'cyber' ? (m && m.steps > 0 && !m.done ? 'Continuer' : 'Lancer l’attaque') : (m && m.steps > 0 && !m.done ? 'Continuer' : 'Exécuter');
+    $('#btn-step span').textContent = S.lang === 'cyber' ? 'Étape suivante' : 'Ligne suivante';
     $('#btn-validate').hidden = !(S.mode === 'missions' && S.view === 'mission');
     $('#btn-step').disabled = !can || (m && m.done);
     $('#btn-over').disabled = !can || (m && m.done);
@@ -595,11 +613,20 @@
     setTimeout(function () {
       var res = O42.judge(S.lang, mi, ed.value());
       S.results = res;
+      if (S.exam) {
+        if (res.ok) { O42.exam.onValidate(true); }
+        else { S.fails[mi.id] = (S.fails[mi.id] || 0) + 1; var n0 = res.results.filter(function (r) { return r.ok; }).length; toast('Pas encore (' + n0 + '/' + res.results.length + ') — le chrono tourne, réessaie !', 'bad'); side(); }
+        if (tb) tb.disabled = false;
+        return;
+      }
       if (res.ok) {
-        var first = !S.progress[mi.id];
-        S.progress[mi.id] = Date.now();
+        var P = O42.profile, prev = S.progress[mi.id], first = !prev;
+        var earned = P.computeStars((S.hintsShown[mi.id] || 0) > 0, (S.fails[mi.id] || 0) > 0);
+        var stars = Math.max(earned, prev ? prev.s || 0 : 0);
+        S.lastEarned = { earned: earned, total: stars, first: first };
+        S.progress[mi.id] = { s: stars, h: (S.hintsShown[mi.id] || 0) > 0 ? 1 : 0, f: (S.fails[mi.id] || 0), t: Date.now() };
         S.won[mi.id] = true;
-        store.set('progress', S.progress);
+        P.save(S.progress);
         xp();
         confetti();
         celebrate(mi, first, res);
@@ -644,10 +671,14 @@
     var chapFull = chapDone === chapN;
     var opened = k < 10 && chapDone === 5 && first;
     var msg = chapFull && first ? 'Chapitre ' + k + ' terminé : « ' + U.esc(O42.chapters[L][k - 1].t) + ' » !' : CHEERS[(idx + total) % CHEERS.length];
+    var le = S.lastEarned || { earned: 3, total: 3 };
+    var starRow = '★★★'.slice(0, le.total) + '<span class="win-star-off">' + '★★★'.slice(0, 3 - le.total) + '</span>';
+    var earnTxt = le.first ? '+' + le.earned + ' ★' + (le.total < 3 ? ' — rejoue sans indice et du premier coup pour 3 ★' : ' — parfait !') : 'déjà obtenu';
     modal('<div class="win-modal"><div class="win-badge"><span>★</span></div><h2>Bien joué !</h2>' +
-      '<p class="win-title">Mission <b>' + mi.ch + '.' + mi.ord + ' · ' + U.esc(mi.title) + '</b> réussie.</p><p class="win-msg">' + msg + '</p>' +
+      '<p class="win-title">Mission <b>' + mi.ch + '.' + mi.ord + ' · ' + U.esc(mi.title) + '</b> réussie.</p>' +
+      '<div class="win-starline">' + starRow + '</div><p class="win-msg">' + U.esc(earnTxt) + ' · ' + msg + '</p>' +
       (opened ? '<p class="win-unlock">🔓 Le chapitre ' + (k + 1) + ' « ' + U.esc(O42.chapters[L][k].t) + ' » est maintenant ouvert.</p>' : '') +
-      '<div class="win-stats"><div><b>' + res.results.length + '/' + res.results.length + '</b><span>tests</span></div><div><b>' + chapDone + '/' + chapN + '</b><span>chapitre ' + k + '</span></div><div><b>' + total + '/' + all.length + '</b><span>missions ' + LANG[L].name + '</span></div></div>' +
+      '<div class="win-stats"><div><b>' + O42.profile.domainStars(S.progress, L) + '/' + O42.profile.domainMax(L) + '</b><span>★ ' + LANG[L].name + '</span></div><div><b>' + chapDone + '/' + chapN + '</b><span>chapitre ' + k + '</span></div><div><b>' + O42.profile.total(S.progress) + '</b><span>★ au total</span></div></div>' +
       '<div class="win-actions">' + (next >= 0 && unlocked(L, next) ? '<button type="button" class="go" id="win-next">Mission suivante →</button>' : '') + '<button type="button" class="close">Rester ici</button></div></div>');
     var nb = $('#win-next');
     if (nb) { nb.focus(); nb.addEventListener('click', function () { el.modal.hidden = true; go(L, 'missions', next); }); }
@@ -699,6 +730,6 @@
     if (k === 'F9') { e.preventDefault(); act(stepBack); return; }
   }
 
-  O42.app = { state: S, render: render, restart: restart };
+  O42.app = { state: S, render: render, restart: restart, go: go, side: side, xp: xp, mission: mission, confetti: confetti };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

@@ -16,13 +16,16 @@
   var ASM_REG = /^(r(?:[abcd]x|[sd]i|[sb]p|8|9|1[0-5])[dwb]?|e(?:[abcd]x|[sd]i|[sb]p)|[abcd][xlh]|[sd]il?|[sb]pl?|rip)$/i;
   var ASM_DIR = /^(section|segment|global|extern|bits|default|db|dw|dd|dq|resb|resw|resd|resq|equ|times|align|byte|word|dword|qword|ptr|rel)$/i;
   function set(s) { var o = {}; s.split(' ').forEach(function (w) { o[w] = 1; }); return o; }
-  var SETS = { ckw: set(C_KW), cty: set(C_TY), cbi: set(C_BI), pkw: set(PY_KW), pbi: set(PY_BI) };
+  var COB_KW = 'IDENTIFICATION PROGRAM-ID ENVIRONMENT DATA PROCEDURE DIVISION SECTION WORKING-STORAGE FILE LINKAGE DISPLAY ACCEPT MOVE TO ADD SUBTRACT MULTIPLY DIVIDE COMPUTE GIVING FROM BY INTO REMAINDER IF ELSE END-IF EVALUATE WHEN OTHER END-EVALUATE PERFORM UNTIL VARYING TIMES END-PERFORM THRU THROUGH STOP RUN GOBACK CONTINUE EXIT STRING UNSTRING INSPECT INITIALIZE DELIMITED SIZE SPACE SPACES ZERO ZEROS ZEROES HIGH-VALUE LOW-VALUE AND OR NOT GREATER LESS EQUAL THAN REDEFINES OCCURS VALUE';
+  var COB_TY = 'PIC PICTURE COMP COMP-3 BINARY PACKED-DECIMAL IS';
+  var SETS = { ckw: set(C_KW), cty: set(C_TY), cbi: set(C_BI), pkw: set(PY_KW), pbi: set(PY_BI), cobkw: set(COB_KW), cobty: set(COB_TY) };
 
   /* découpe en jetons [type, texte] */
   function tokens(src, lang) {
     var out = [], re;
     if (lang === 'c') re = /(\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|$))|("(?:\\.|[^"\\\n])*"?)|('(?:\\.|[^'\\\n])*'?)|(^[ \t]*#[^\n]*)|(\b0[xX][0-9a-fA-F]+\b|\b\d+(?:\.\d+)?[uUlLfF]*\b)|([A-Za-z_]\w*)|(\s+)|([^\sA-Za-z_0-9"']+)/gm;
     else if (lang === 'py') re = /(#[^\n]*)|([rRfFbB]{0,2}(?:"""[\s\S]*?(?:"""|$)|'''[\s\S]*?(?:'''|$)|"(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?))|(@\w+)|(^\b$)|(\b0[xX][0-9a-fA-F]+\b|\b\d+(?:\.\d+)?\b)|([A-Za-z_À-ɏ][\wÀ-ɏ]*)|(\s+)|([^\sA-Za-z_0-9"'#]+)/gm;
+    else if (lang === 'cobol') re = /(^.{6}[*\/].*$|^\s*\*.*$)|("(?:[^"\n])*"?|'(?:[^'\n])*'?)|(^\b$)|(^\b$)|(\b\d+(?:\.\d+)?\b)|([A-Za-z][A-Za-z0-9-]*)|(\s+)|([^\sA-Za-z0-9"']+)/gm;
     else re = /(;[^\n]*)|("(?:[^"\n])*"?|'(?:[^'\n])*'?|`(?:\\.|[^`\n])*`?)|([A-Za-z_.?@$][\w.?@$]*:)|(^\b$)|(\b0[xX][0-9a-fA-F]+\b|\b[0-9][0-9a-fA-F]*[hH]\b|\b\d+\b)|([A-Za-z_.?@$][\w.?@$]*)|(\s+)|([^\sA-Za-z_0-9"'`;.]+|\.)/gm;
     var m, lineStart = true, prevWord = null, firstWordOfLine = true;
     while ((m = re.exec(src))) {
@@ -36,6 +39,7 @@
       else if (m[6]) {
         if (lang === 'c') ty = SETS.ckw[t] ? 'kw' : SETS.cty[t] ? 'ty' : SETS.cbi[t] ? 'bi' : /^\s*\(/.test(src.slice(re.lastIndex, re.lastIndex + 3)) ? 'fn' : 'tx';
         else if (lang === 'py') ty = SETS.pkw[t] ? 'kw' : SETS.pbi[t] ? 'bi' : prevWord === 'def' ? 'fn' : /^\(/.test(src.slice(re.lastIndex, re.lastIndex + 1)) ? 'fn' : 'tx';
+        else if (lang === 'cobol') { var U2 = t.toUpperCase(); ty = SETS.cobty[U2] ? 'ty' : SETS.cobkw[U2] ? 'kw' : /^\d+$/.test(t) ? 'num' : 'tx'; }
         else ty = ASM_REG.test(t) ? 'reg' : ASM_DIR.test(t) ? 'dir' : firstWordOfLine ? 'mn' : 'tx';
         prevWord = t;
       } else if (m[8]) ty = 'op';
@@ -50,6 +54,7 @@
 
   /* jetons → tableau de lignes HTML */
   function highlight(src, lang) {
+    if (lang === 'cyber') return src.split('\n').map(function (l) { return U.esc(l); });
     var lines = [''], toks = tokens(src, lang);
     toks.forEach(function (tk) {
       var parts = tk[1].split('\n');

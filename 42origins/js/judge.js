@@ -11,6 +11,8 @@
   function stripComments(src, lang) {
     if (lang === 'c') return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
     if (lang === 'py') return src.replace(/(^|[^"'])#[^\n]*/g, '$1');
+    if (lang === 'cobol') return src.replace(/^.{6}[*/].*$/gm, '').replace(/^\s*\*.*$/gm, '');
+    if (lang === 'cyber') return src;
     return src.replace(/;[^\n]*/g, '');
   }
 
@@ -25,7 +27,13 @@
       if (timedOut) { out.results.push({ n: i + 1, ok: false, why: ['Non exécuté (le test précédent ne s’est jamais arrêté).'], skipped: true }); return; }
       var stdin = t.stdin !== undefined ? t.stdin : (mission.stdin || '');
       var res = { n: i + 1, ok: true, why: [], stdin: stdin, expect: t.expect, exitExp: t.exit, got: '', exit: null };
-      var m = eng.create(code, { stdin: stdin, files: mission.files || { 'texte.txt': 'Bonjour depuis un fichier !\nDeuxième ligne.\n' }, poke: t.poke, maxSteps: opts.maxSteps || (lang === 'asm' ? 100000 : 200000) });
+      var m = eng.create(code, { stdin: stdin, cyber: mission.cyber, files: mission.files || { 'texte.txt': 'Bonjour depuis un fichier !\nDeuxième ligne.\n' }, poke: t.poke, maxSteps: opts.maxSteps || (lang === 'asm' ? 100000 : 200000) });
+      if (lang === 'cyber' && !m.compileError) {
+        while (!m.done) m.step();
+        res.got = m.stdout; res.exit = m.exitCode;
+        if (!m.ok) res.why.push('La cible n’a pas été compromise : ta charge n’atteint pas l’objectif.');
+        res.ok = !res.why.length; if (!res.ok) out.ok = false; out.results.push(res); return;
+      }
       if (m.compileError) {
         res.ok = false; res.why.push('Erreur de compilation ligne ' + m.compileError.line + ' : ' + m.compileError.msg);
         out.results.push(res); out.ok = false; return;

@@ -42,12 +42,37 @@
       ch('Copier la mémoire', 'Octet par octet, [rsi + rcx], .bss.'),
       ch('Lire l’entrée', 'syscall read, tampons, longueur lue.'),
       ch('La libc et malloc', 'main, call malloc, free, libasm.')
+    ],
+    cobol: [
+      ch('Premiers pas', 'DISPLAY, les divisions, STOP RUN.'),
+      ch('Les données (PIC)', 'WORKING-STORAGE, PIC 9 et X, VALUE.'),
+      ch('MOVE et affichage', 'Déplacer des valeurs, champs édités.'),
+      ch('Calculs', 'ADD, SUBTRACT, MULTIPLY, DIVIDE, COMPUTE.'),
+      ch('Décisions', 'IF/ELSE, conditions, EVALUATE.'),
+      ch('Boucles', 'PERFORM TIMES, UNTIL, VARYING.'),
+      ch('Paragraphes', 'Organiser le code, PERFORM d’un paragraphe.'),
+      ch('Tableaux', 'OCCURS, indices, parcours.'),
+      ch('Texte', 'STRING, INSPECT, champs alphanumériques.'),
+      ch('Un vrai programme', 'Lire, calculer, éditer, totaliser — façon banque.')
+    ],
+    cyber: [
+      ch('Premiers réflexes', 'Encodages, bases, lire une cible.'),
+      ch('Injection SQL', 'Contourner un login, dumper une base.'),
+      ch('Injection de commande', 'Enchaîner des commandes shell.'),
+      ch('Chemins & fichiers', 'Traversée de répertoire, LFI.'),
+      ch('Logique & accès', 'IDOR, contournement d’autorisation.'),
+      ch('Mémoire', 'Débordement de tampon, chaîne de format.'),
+      ch('Web côté client', 'XSS, cookies, le DOM.'),
+      ch('Jetons & sessions', 'JWT, alg:none, secrets faibles.'),
+      ch('Cryptographie', 'César, XOR, hash faibles, dictionnaire.'),
+      ch('Mission rouge', 'Enchaîner plusieurs failles, aller loin.')
     ]
   };
 
   /* range les missions par chapitre puis par ordre, et complète les champs */
   O42.finalizeMissions = function () {
-    ['c', 'py', 'asm'].forEach(function (lang) {
+    ['c', 'py', 'asm', 'cobol', 'cyber'].forEach(function (lang) {
+      O42.missions[lang] = O42.missions[lang] || [];
       var list = O42.missions[lang] || [];
       list.forEach(function (m) {
         if (!m.ch) { var k = +/\d+$/.exec(m.id)[0]; m.ch = k; m.ord = 10; m.final = true; }
