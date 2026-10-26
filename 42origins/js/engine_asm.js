@@ -1088,7 +1088,7 @@
       var u = Math.min(unit, n - off), a = s.addr + off, o = a - r.base;
       var v = 0n;
       for (var k = u - 1; k >= 0; k--) v = (v << 8n) | BigInt(r.buf[o + k]);
-      var c = { a: a, n: u, lbl: unit === 1 ? '[' + off + ']' : '+' + off, ty: unit === 1 ? 'octet' : unit * 8 + ' bits' };
+      var c = { a: a, n: u, lbl: unit === 1 ? '[' + off + ']' : '+' + off, ty: unit === 1 ? 'octet' : unit * 8 + ' bits', bytes: Array.prototype.slice.call(r.buf, o, o + u) };
       if (unit === 1) { c.val = U.glyph(Number(v)); c.sub = String(v); c.kind = 'char'; if (v === 0n) c.cls = 'nul'; }
       else {
         var sym = self.symAt(Number(v));
@@ -1115,7 +1115,7 @@
       var rel = 'rsp' + (a - rsp >= 0 ? '+' : '−') + Math.abs(a - rsp);
       var note = this.retMarks.get(a) || (a >= this.spTop ? (a === this.spTop ? 'argc (posé par le noyau)' : '') : '');
       var sym = this.symAt(Number(v));
-      var cell = { a: a, n: 8, lbl: a < rsp ? 'libre' : rel, val: Number(v) === EXIT_MAGIC ? '↩ libc' : v === 0n ? '0' : (sym || this.prog.addrIndex.get(Number(v)) !== undefined) ? U.hex(v) : (toSigned(v, 8) > -1000000n && toSigned(v, 8) < 1000000n ? toSigned(v, 8).toString() : U.hex(v)), kind: 'num' };
+      var cell = { a: a, n: 8, bytes: (function (r0) { var o0 = a - r0.base; return Array.prototype.slice.call(r0.buf, o0, o0 + 8); })(self.stack), lbl: a < rsp ? 'libre' : rel, val: Number(v) === EXIT_MAGIC ? '↩ libc' : v === 0n ? '0' : (sym || this.prog.addrIndex.get(Number(v)) !== undefined) ? U.hex(v) : (toSigned(v, 8) > -1000000n && toSigned(v, 8) < 1000000n ? toSigned(v, 8).toString() : U.hex(v)), kind: 'num' };
       if (a < rsp) cell.cls = 'garbage';
       if (sym || (Number(v) >= HEAP_BASE && Number(v) < HEAP_BASE + HEAP_SIZE) || (Number(v) >= this.stack.base && Number(v) < STACK_TOP)) { cell.ref = Number(v); cell.kind = 'ptr'; }
       if (this.prog.addrIndex.get(Number(v)) !== undefined) { cell.kind = 'code'; cell.val = U.hex(v); }

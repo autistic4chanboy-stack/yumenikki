@@ -26,6 +26,7 @@
     <button data-mode="sandbox" type="button">🧪 Bac à sable</button>
   </nav>
   <div class="grow"></div>
+  <button id="btn-side" class="ghost sm" type="button" title="Masquer / afficher le panneau de gauche pour agrandir la mémoire">◧ Panneau</button>
   <span id="xp" class="xp" title="Missions réussies"></span>
   <button id="btn-help" class="icon-btn" type="button" title="Aide et raccourcis">?</button>
 </header>
@@ -103,9 +104,12 @@
       <div class="panel-h">
         <span class="ph-ico">🧠</span> Mémoire
         <div class="grow"></div>
+        <div class="mem-tools">
+          <label class="toggle" title="Afficher les flèches des pointeurs (sinon : au survol)"><input type="checkbox" id="opt-wires" checked> <span>Flèches</span></label>
+          <label class="toggle" title="Afficher les octets en hexadécimal sous chaque case"><input type="checkbox" id="opt-bytes"> <span>Octets</span></label>
+        </div>
         <div class="legend">
-          <span class="lg stack">stack</span><span class="lg heap">heap</span><span class="lg data">data</span><span class="lg rodata">rodata</span>
-          <span class="lg rd">lu</span><span class="lg wr">écrit</span>
+          <span class="lg rd" title="case lue à la dernière étape">lu</span><span class="lg wr" title="case écrite à la dernière étape">écrit</span>
         </div>
       </div>
       <div id="mem" class="mem"></div>

@@ -60,7 +60,18 @@
     $('#btn-fresh').addEventListener('click', function () { pause(); restart(); });
     $('#btn-reset-code').addEventListener('click', resetCode);
     $('#btn-help').addEventListener('click', help);
+    document.body.classList.toggle('no-side', store.get('noSide', false));
+    $('#btn-side').addEventListener('click', function () {
+      var on = !document.body.classList.contains('no-side');
+      document.body.classList.toggle('no-side', on); store.set('noSide', on);
+      setTimeout(function () { if (S.m) render({ scroll: false }); }, 50);
+    });
     $('#brand').addEventListener('click', function (e) { e.preventDefault(); welcome(); });
+    var ow = document.getElementById('opt-wires'), ob = document.getElementById('opt-bytes');
+    ow.checked = store.get('wires', true); ob.checked = store.get('bytes', false);
+    mem.wires = ow.checked; mem.bytes = ob.checked;
+    ow.addEventListener('change', function () { store.set('wires', ow.checked); mem.setOptions({ wires: ow.checked }); });
+    ob.addEventListener('change', function () { store.set('bytes', ob.checked); mem.setOptions({ bytes: ob.checked }); });
     el.speed.value = S.speed;
     el.speed.addEventListener('input', function () { S.speed = +el.speed.value; store.set('speed', S.speed); speedLabel(); });
     speedLabel();

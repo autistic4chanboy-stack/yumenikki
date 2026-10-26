@@ -1740,7 +1740,8 @@
       else if (x.ty === 'exc') cells.push({ a: base, n: 8, lbl: '', val: x.name + '(' + reprStr(x.msg) + ')', kind: 'code' });
       else cells.push({ a: base, n: 8, lbl: '', val: self.brief(x), kind: 'code' });
       var len = x.ty === 'str' ? x.v.length : x.items ? x.items.length : x.ty === 'dict' ? x.keys.length : null;
-      return { key: 'o' + x.id, name: x.ty === 'function' ? 'function' : x.ty, type: x.ty + (len !== null ? ' · len ' + len : ''), a: x.id, n: 16, cells: cells, region: 'heap', note: 'réf. ×' + refc.get(x) + (x.ty === 'str' ? ' · immuable' : x.ty === 'list' || x.ty === 'dict' ? ' · modifiable' : ''), isArr: !!(x.items || x.ty === 'str') };
+      var nm = x.ty === 'str' ? reprStr(x.v.length > 14 ? x.v.slice(0, 13) + '…' : x.v) : x.ty === 'function' ? 'fonction ' + x.name : x.ty === 'list' ? 'liste' : x.ty;
+      return { key: 'o' + x.id, name: nm, type: x.ty + (len !== null ? ' · len ' + len : ''), a: x.id, n: 16, cells: cells, region: 'heap', note: 'réf. ×' + refc.get(x) + (x.ty === 'str' ? ' · immuable' : x.ty === 'list' || x.ty === 'dict' ? ' · modifiable' : ''), isArr: !!(x.items || x.ty === 'str') };
     });
     regions.push({ kind: 'heap', title: 'Objets (tas)', info: 'En Python tout est objet : listes, textes, fonctions vivent sur le tas. Quand plus aucun nom ne les référence, le ramasse-miettes les supprime.', groups: [{ title: '', objs: objs }], empty: 'Aucun objet pour l’instant.' });
     return { regions: regions, acc: this.acc };
