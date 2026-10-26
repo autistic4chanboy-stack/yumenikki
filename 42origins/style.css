@@ -2,6 +2,7 @@
  *  42 ORIGINS — styles
  * ========================================================================= */
 :root {
+  color-scheme: dark;
   --bg: #0a0e16;
   --bg2: #0e1420;
   --panel: #121a28;
@@ -492,6 +493,7 @@ details.lesson[open] summary::before { content: '▾ '; }
 .modal-card p { margin: 6px 0; }
 .modal-card table { border-collapse: collapse; width: 100%; font-size: 13px; }
 .modal-card td { padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.m-actions .close { float: none !important; }
 .modal-card .close { float: right; border: 1px solid var(--line2); background: var(--panel2); border-radius: 8px; padding: 4px 10px; }
 .welcome-langs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 4px; }
 .welcome-langs button { border: 1px solid var(--line2); background: var(--bg2); border-radius: 12px; padding: 14px 10px; text-align: center; transition: transform .12s, border-color .12s; }

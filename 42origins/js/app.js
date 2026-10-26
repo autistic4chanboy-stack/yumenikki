@@ -58,7 +58,7 @@
     $('#btn-restart').addEventListener('click', function () { pause(); restart(); });
     $('#btn-replay').addEventListener('click', function () { replay(); });
     $('#btn-fresh').addEventListener('click', function () { pause(); restart(); });
-    $('#btn-reset-code').addEventListener('click', resetCode);
+    $('#btn-reset-code').addEventListener('click', function () { resetCode(false); });
     $('#btn-help').addEventListener('click', help);
     document.body.classList.toggle('no-side', store.get('noSide', false));
     $('#btn-side').addEventListener('click', function () {
@@ -98,7 +98,8 @@
   }
   function go(lang, mode, idx) {
     var h = '#' + lang + '/' + mode + (idx !== undefined && idx !== null ? '/' + idx : '');
-    if (location.hash !== h) location.hash = h; else open(lang, mode, idx);
+    try { if (location.hash !== h) history.replaceState(null, '', h); } catch (e) { /* adresse non modifiable (page intégrée) */ }
+    open(lang, mode, idx);
   }
   function open(lang, mode, idx) {
     pause();
@@ -142,7 +143,7 @@
   function saveStdin() { store.set('in.' + codeKey(), el.stdin.value); }
   function resetCode() {
     var def = S.mode === 'missions' ? mission().starter : O42.examples[S.lang][S.ex].code;
-    if (ed.value() !== def && !confirm('Remettre le code de départ ? Tes modifications seront perdues.')) return;
+    if (ed.value() !== def && !arguments[0]) { ask('Remettre le code de départ ? Tes modifications seront perdues.', 'Remettre', function () { resetCode(true); }); return; }
     ed.set(def, S.lang);
     store.set(codeKey(), def);
     el.stdin.value = S.mode === 'missions' ? (mission().stdin || '') : (O42.examples[S.lang][S.ex].stdin || '');
@@ -204,8 +205,9 @@
       $('#m-validate').addEventListener('click', validate);
       var hb = $('#m-hint'); if (hb) hb.addEventListener('click', function () { S.hintsShown[m.id] = shown + 1; side(); renderScene(); });
       var sb = $('#m-sol'); if (sb) sb.addEventListener('click', function () {
-        if (!confirm('Afficher une solution dans l’éditeur ? Ton code actuel sera remplacé (tu peux revenir au code de départ avec « Code initial »).')) return;
-        ed.set(m.solution, L); store.set(codeKey(), m.solution); pause(); restart();
+        ask('Afficher une solution dans l’éditeur ? Ton code actuel sera remplacé (tu peux revenir au code de départ avec « Code initial »).', 'Afficher la solution', function () {
+          ed.set(m.solution, L); store.set(codeKey(), m.solution); pause(); restart();
+        });
       });
       var nb = $('#m-next'); if (nb) nb.addEventListener('click', function () { go(L, 'missions', S.mid + 1); });
       renderScene();
@@ -582,6 +584,11 @@
     }
   }
   function modal(html) { el.modal.innerHTML = '<div class="modal-card">' + html + '</div>'; el.modal.hidden = false; }
+  /* confirmation dans la page (les fenêtres confirm() sont bloquées dans certains cadres) */
+  function ask(msg, yes, fn) {
+    modal('<h2 style="font-size:19px">Confirmer</h2><p>' + U.esc(msg) + '</p><div class="m-actions" style="justify-content:flex-end;margin-top:14px"><button type="button" class="close">Annuler</button><button type="button" class="go" id="ask-yes">' + U.esc(yes) + '</button></div>');
+    $('#ask-yes').addEventListener('click', function () { el.modal.hidden = true; fn(); });
+  }
   function closeModal() { el.modal.hidden = true; store.set('welcomed', true); }
   function welcome() {
     modal('<button class="close" type="button">✕</button><h2>Bienvenue dans 42 Origins</h2>' +

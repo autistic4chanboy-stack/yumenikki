@@ -69,10 +69,10 @@
       var c = bytes[i];
       if (c < 0x80) { s += String.fromCharCode(c); i++; continue; }
       var need = c >= 0xf0 ? 3 : c >= 0xe0 ? 2 : c >= 0xc0 ? 1 : -1, cp = c & (0x3f >> need);
-      if (need < 0 || i + need >= n + (need ? 0 : 1)) { s += '�'; i++; continue; }
+      if (need < 0 || i + need >= n + (need ? 0 : 1)) { s += '\ufffd'; i++; continue; }
       var okk = true;
       for (var k = 1; k <= need; k++) { var d = bytes[i + k]; if (d === undefined || (d & 0xc0) !== 0x80) { okk = false; break; } cp = (cp << 6) | (d & 63); }
-      if (!okk) { s += '�'; i++; continue; }
+      if (!okk) { s += '\ufffd'; i++; continue; }
       s += String.fromCodePoint(cp); i += need + 1;
     }
     return s;
