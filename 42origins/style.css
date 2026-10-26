@@ -629,3 +629,4 @@ details.lesson[open] summary::before { content: '▾ '; }
   .tb-main button span { display: inline; }
   .toolbar button.validate { margin-left: 0; }
 }
+.mr-s i, .m-title .stars i { font-style: normal; color: #3a4560; }
