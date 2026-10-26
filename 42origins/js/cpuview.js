@@ -77,9 +77,9 @@
     if (last && last.jump && last.jump.ext) html += '<div class="sysbox">📞 <b>call ' + U.esc(last.jump.ext) + '</b> : fonction de la libc. Arguments dans rdi, rsi, rdx, rcx, r8, r9 ; résultat dans rax.</div>';
     // registres
     html += '<div class="regs">' + regs.map(function (r) {
-      var cls = 'rg' + (r.changed && last ? ' chg' : '') + (r.name === self.sel ? ' sel' : '') + (r.name === 'rsp' ? ' sp' : r.name === 'rbp' ? ' bp' : '');
+      var cls = 'rg' + (/^r(8|9|1[0-5])$/.test(r.name) ? ' ext' + (r.v || r.changed ? ' nz' : '') : '') + (r.changed && last ? ' chg' : '') + (r.name === self.sel ? ' sel' : '') + (r.name === 'rsp' ? ' sp' : r.name === 'rbp' ? ' bp' : '');
       var hint = { rax: 'retour / n° syscall', rdi: '1er argument', rsi: '2e argument', rdx: '3e argument', rcx: '4e arg · compteur', rsp: 'sommet de pile', rbp: 'base du cadre', r8: '5e argument', r9: '6e argument', rbx: 'à préserver', r12: 'à préserver', r13: 'à préserver', r14: 'à préserver', r15: 'à préserver', r10: 'temporaire', r11: 'écrasé par syscall' }[r.name] || '';
-      return '<div class="' + cls + '" data-r="' + r.name + '" title="' + r.name + ' : ' + hint + '"><div class="n">' + r.name + '<small>' + hint + '</small></div><div class="x">' + grp(r.v) + '</div><div class="dv">' + U.esc(r.sym ? '→ ' + r.sym : dec(r.v) + charOf(r.v)) + '</div></div>';
+      return '<div class="' + cls + '" data-r="' + r.name + '" title="' + r.name + ' : ' + hint + '"><div class="n">' + r.name + '<small>' + hint + '</small></div><div class="x">' + grp(r.v) + '</div><div class="dv">' + U.esc(r.sym ? '→ ' + r.sym : BigInt.asIntN(64, r.v) > 99999999n || BigInt.asIntN(64, r.v) < -99999999n ? U.hex(r.v) : dec(r.v) + charOf(r.v)) + '</div></div>';
     }).join('') + '</div>';
     // zoom sur un registre
     var sr = regs.filter(function (r) { return r.name === self.sel; })[0] || regs[0];

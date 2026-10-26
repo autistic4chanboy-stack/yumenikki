@@ -630,3 +630,20 @@ details.lesson[open] summary::before { content: '▾ '; }
   .toolbar button.validate { margin-left: 0; }
 }
 .mr-s i, .m-title .stars i { font-style: normal; color: #3a4560; }
+
+/* =========================================================================
+ *  Mode simple (par défaut) : seulement l'essentiel à l'écran
+ * ========================================================================= */
+.adv-toggle { padding: 5px 10px; border: 1px solid var(--line2); border-radius: 8px; }
+.simple .adv { display: none !important; }
+.simple .howto { display: none; }
+.simple .reg-info, .simple .addr-guide { display: none; }
+.simple .reg.empty { display: none; }
+.simple .explain .ex:nth-child(n+4) { display: none; }
+.simple .toolbar { padding: 8px; }
+.simple .pipe, .simple .zoom, .simple .cpu-legend, .simple .rg .n small, .simple .rg .x { display: none; }
+.simple .rg.ext:not(.nz) { display: none; }
+.simple .regs { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.simple .rg .dv { font-size: 13px; color: #fff; font-weight: 600; }
+.simple .cpu-panel { max-height: 46%; }
+.simple .mem-panel .legend { display: none; }

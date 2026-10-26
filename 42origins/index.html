@@ -26,7 +26,8 @@
     <button data-mode="sandbox" type="button">🧪 Bac à sable</button>
   </nav>
   <div class="grow"></div>
-  <button id="btn-side" class="ghost sm" type="button" title="Masquer / afficher le panneau de gauche pour agrandir la mémoire">◧ Panneau</button>
+  <label class="toggle adv-toggle" title="Affiche les outils avancés : vitesse, pas à pas fin, octets, pipeline du processeur…"><input type="checkbox" id="opt-adv"> <span>Outils avancés</span></label>
+  <button id="btn-side" class="ghost sm adv" type="button" title="Masquer / afficher le panneau de gauche pour agrandir la mémoire">◧ Panneau</button>
   <span id="xp" class="xp" title="Missions réussies"></span>
   <button id="btn-help" class="icon-btn" type="button" title="Aide et raccourcis">?</button>
 </header>
@@ -40,7 +41,7 @@
         <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
         <span id="file-name" class="file-name">main.c</span>
         <div class="grow"></div>
-        <label class="toggle" title="Réexécute tout le programme à chaque modification : idéal pour écrire ton code petit à petit">
+        <label class="toggle adv" title="Réexécute tout le programme à chaque modification : idéal pour écrire ton code petit à petit">
           <input type="checkbox" id="live"> <span>Direct</span>
         </label>
         <button id="btn-reset-code" class="ghost sm" type="button" title="Remettre le code de départ">↺ Code initial</button>
@@ -62,7 +63,7 @@
         <button id="btn-restart" type="button" title="Recommence depuis le début">⟲ <span>Recommencer</span></button>
         <button id="btn-validate" class="validate" type="button" title="Lance les tests de la mission" hidden>✅ <span>Valider</span></button>
       </div>
-      <div class="tb-more">
+      <div class="tb-more adv">
         <button id="btn-over" class="sm" type="button" title="Exécute un appel de fonction d’un seul coup (Maj+F10)">↷ Passer la fonction</button>
         <button id="btn-out" class="sm" type="button" title="Termine la fonction en cours (F8)">⤴ Sortir</button>
         <button id="btn-back" class="sm" type="button" title="Revient d’une ligne en arrière (F9)">⤒ Revenir</button>
@@ -83,8 +84,8 @@
     <div class="panel io-panel">
       <div class="panel-h tabs" role="tablist">
         <button class="tab on" data-tab="out" type="button">🖥 Sortie</button>
-        <button class="tab" data-tab="in" type="button">⌨ Entrée (stdin)</button>
-        <button class="tab" data-tab="files" type="button">📄 Fichiers</button>
+        <button class="tab" data-tab="in" id="tab-in" type="button">⌨ Entrée</button>
+        <button class="tab" data-tab="files" id="tab-files" type="button">📄 Fichier</button>
         <div class="grow"></div>
         <span id="exit-badge" class="exit-badge"></span>
       </div>
@@ -106,7 +107,7 @@
       <div class="panel-h">
         <span class="ph-ico">🧠</span> Mémoire
         <div class="grow"></div>
-        <div class="mem-tools">
+        <div class="mem-tools adv">
           <label class="toggle" title="Afficher les flèches des pointeurs (sinon : au survol)"><input type="checkbox" id="opt-wires" checked> <span>Flèches</span></label>
           <label class="toggle" title="Afficher les octets en hexadécimal sous chaque case"><input type="checkbox" id="opt-bytes"> <span>Octets</span></label>
         </div>

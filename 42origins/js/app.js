@@ -62,6 +62,15 @@
     $('#btn-fresh').addEventListener('click', function () { pause(); restart(); });
     $('#btn-reset-code').addEventListener('click', function () { resetCode(false); });
     $('#btn-help').addEventListener('click', help);
+    var adv = document.getElementById('opt-adv');
+    adv.checked = store.get('adv', false);
+    document.body.classList.toggle('simple', !adv.checked);
+    adv.addEventListener('change', function () {
+      store.set('adv', adv.checked);
+      document.body.classList.toggle('simple', !adv.checked);
+      if (!adv.checked) { document.body.classList.remove('no-side'); store.set('noSide', false); }
+      tabsFor(); setTimeout(function () { if (S.m) render({ scroll: false }); }, 30);
+    });
     document.body.classList.toggle('no-side', store.get('noSide', false));
     $('#btn-side').addEventListener('click', function () {
       var on = !document.body.classList.contains('no-side');
@@ -129,6 +138,7 @@
     }
     if (langChanged) mem.closed = {};
     side();
+    tabsFor();
     xp();
     restart();
   }
@@ -212,7 +222,7 @@
         (m.story ? '<p class="story">' + m.story + '</p>' : '') +
         '<div class="goal"><h4>🎯 Objectif</h4>' + m.goal + '</div>' +
         '<ol class="howto"><li>Lis l’objectif</li><li>Complète le code</li><li>Teste : <b>▶</b> ou <b>⤓</b></li><li>Clique <b>✅ Valider</b></li></ol>' +
-        (m.lesson ? '<details class="lesson"' + (m.ord === 1 || m.final ? ' open' : '') + '><summary>📘 Leçon</summary><div class="lesson-b">' + m.lesson + '</div></details>' : '') +
+        (m.lesson ? '<details class="lesson"' + (m.ord === 1 ? ' open' : '') + '><summary>📘 Leçon</summary><div class="lesson-b">' + m.lesson + '</div></details>' : '') +
         '<div class="hints">' + m.hints.slice(0, shown).map(function (t, i) { return '<div class="hint"><b>Indice ' + (i + 1) + ' :</b> ' + U.esc(t) + '</div>'; }).join('') + '</div>' +
         '<div class="m-actions"><button class="go" id="m-validate" type="button">✅ Valider la mission</button>' +
         (shown < m.hints.length ? '<button id="m-hint" type="button">💡 Indice ' + (shown + 1) + '/' + m.hints.length + '</button>' : '') +
@@ -443,6 +453,7 @@
   var liveT = 0, recT = 0;
   function onCode() {
     saveCode();
+    clearTimeout(S.tabT); S.tabT = setTimeout(tabsFor, 400);
     if (S.live) { clearTimeout(liveT); liveT = setTimeout(liveRun, 450); return; }
     markDirty();
   }
@@ -559,6 +570,17 @@
     $('#btn-back').disabled = !can || !m || m.steps === 0;
   }
   function speedLabel() { el['speed-val'].textContent = SPEEDS[S.speed].l; }
+  /* en mode simple, les onglets Entrée et Fichier n'apparaissent que s'ils servent */
+  function tabsFor() {
+    var code = ed.value(), simple = document.body.classList.contains('simple');
+    var mi = S.mode === 'missions' ? mission() : null, ex = S.mode === 'sandbox' ? O42.examples[S.lang][S.ex] : null;
+    var wantsIn = !!((mi && (mi.stdin || mi.tests.some(function (t) { return t.stdin; }))) || (ex && ex.stdin) || el.stdin.value || /\bread\b|get_next_line|\binput\s*\(|stdin/.test(code));
+    var wantsFile = /\bopen\b|texte\.txt/.test(code);
+    $('#tab-in').hidden = simple && !wantsIn;
+    $('#tab-files').hidden = simple && !wantsFile;
+    var on = $('.tab.on');
+    if (on && on.hidden) tab('out');
+  }
   function tab(name) {
     $$('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === name); });
     $$('.tab-body').forEach(function (b) { b.hidden = b.dataset.body !== name; });
@@ -663,6 +685,7 @@
       '<tr><td><span style="color:var(--rd)">◻ bleu</span> / <span style="color:var(--wr)">◻ orange</span></td><td>case lue / écrite à la dernière étape (avec l’expression, ex. <code>s[i]</code>)</td></tr>' +
       '<tr><td>hachuré</td><td>non initialisé : valeur résiduelle indéterminée</td></tr>' +
       '<tr><td>flèches</td><td>un pointeur et la case qu’il désigne (survole-le)</td></tr></table>' +
+      '<h3>Mode simple et outils avancés</h3><p>Par défaut, seul l’essentiel est affiché. Coche <b>Outils avancés</b> (en haut à droite) pour retrouver la vitesse, le pas à pas fin (passer une fonction, sortir, revenir), les octets en hexadécimal, le pipeline du processeur et le mode <b>Direct</b>.</p>' +
       '<h3>Écrire petit à petit</h3><p>Coche <b>Direct</b> : le programme est réexécuté à chaque frappe. Ou modifie le code en pause puis clique <b>⟳ Rejouer jusqu’ici</b> : la nouvelle version est rejouée jusqu’à l’étape où tu étais.</p>' +
       '<h3>Ce qui est simulé</h3><p>C : types de base, pointeurs, tableaux, struct, typedef, enum, static, malloc/calloc/realloc/free, write/read/open/close, get_next_line, printf, fonctions de &lt;string.h&gt; et &lt;ctype.h&gt;. Détection des segfaults, débordements, use-after-free, double free et fuites. Python : un sous-ensemble de Python 3 (sans classes). Assembleur : NASM x86-64 Linux, syscalls read/write/open/close/exit, libc malloc/free/printf.</p>');
   }

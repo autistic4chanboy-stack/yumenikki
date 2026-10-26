@@ -66,8 +66,9 @@
     else html += '<div class="addr-guide">▲ adresses hautes</div>';
     view.regions.forEach(function (r) {
       var closed = self.closed[r.kind] !== undefined ? self.closed[r.kind] : !!r.collapsed;
-      html += '<section class="reg reg-' + r.kind + (closed ? ' closed' : '') + '" data-kind="' + r.kind + '">' +
-        '<div class="reg-h"><span class="badge">' + BADGE[r.kind] + '</span><h3>' + U.esc(r.title) + '</h3><span class="chev">▾</span></div>' +
+      var nobj = r.groups.reduce(function (n, g) { return n + g.objs.length; }, 0);
+      html += '<section class="reg reg-' + r.kind + (closed ? ' closed' : '') + (nobj ? '' : ' empty') + '" data-kind="' + r.kind + '">' +
+        '<div class="reg-h" title="' + U.esc(r.info || '') + '"><span class="badge">' + BADGE[r.kind] + '</span><h3>' + U.esc(r.title) + '</h3><span class="chev">▾</span></div>' +
         '<div class="reg-b">' + (r.info ? '<p class="reg-info">' + U.esc(r.info) + '</p>' : '');
       var any = false;
       r.groups.forEach(function (g, gi) {
