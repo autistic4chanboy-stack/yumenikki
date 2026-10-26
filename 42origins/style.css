@@ -486,7 +486,7 @@ details.lesson[open] summary::before { content: '▾ '; }
 .memo td { border-bottom: 1px solid var(--line); padding: 2px 4px; }
 
 /* ---------- modal, toast, confettis ---------- */
-.modal { position: fixed; inset: 0; z-index: 50; background: rgba(3, 6, 12, .72); display: grid; place-items: center; padding: 16px; backdrop-filter: blur(3px); }
+.modal { position: fixed; inset: 0; z-index: 90; background: rgba(3, 6, 12, .72); display: grid; place-items: center; padding: 16px; backdrop-filter: blur(3px); }
 .modal-card { background: var(--panel); border: 1px solid var(--line2); border-radius: 14px; max-width: 720px; width: 100%; max-height: 90vh; overflow: auto; padding: 20px 22px; box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
 .modal-card h2 { margin: 0 0 6px; font: 700 24px var(--pix); }
 .modal-card h3 { margin: 14px 0 6px; font-size: 14px; color: var(--accent2); }
@@ -504,7 +504,7 @@ details.lesson[open] summary::before { content: '▾ '; }
 .toast.show { opacity: 1; transform: translateX(-50%); }
 .toast.good { border-color: var(--ok); color: var(--ok); }
 .toast.bad { border-color: var(--err); color: #ffd3dc; }
-.confetti { position: fixed; top: -12px; width: 9px; height: 14px; z-index: 70; pointer-events: none; animation: fall linear forwards; }
+.confetti { position: fixed; top: -12px; width: 9px; height: 14px; z-index: 95; pointer-events: none; animation: fall linear forwards; }
 @keyframes fall { to { transform: translateY(105vh) rotate(720deg); } }
 
 /* scènes : animations communes */
@@ -521,6 +521,10 @@ details.lesson[open] summary::before { content: '▾ '; }
 .s-blink { animation: blinkEye 4s infinite; transform-origin: center; transform-box: fill-box; }
 .s-flick { animation: flick 3s infinite; }
 .s-twinkle { animation: twinkle 2s ease-in-out infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes scan { 0% { transform: translateY(0); opacity: .9; } 100% { transform: translateY(96px); opacity: .2; } }
+.s-spin { animation: spin 2.6s linear infinite; transform-box: fill-box; transform-origin: center; }
+.s-scan { animation: scan 2.2s linear infinite; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 1280px) {

@@ -80,6 +80,11 @@
         if (!m.stars) m.stars = Math.min(5, Math.ceil(m.ch / 2));
         if (!m.job) m.job = 'Chapitre ' + m.ch + ' · mission ' + m.ord;
         if (!m.hints) m.hints = [];
+        if ((!m.scene || m.scene === 'terminal') && O42.scenes && O42.scenes.pick) {
+          var pk = O42.scenes.pick(m, lang);
+          m.scene = pk.scene;
+          if (pk.opts && !m.sceneOpts) m.sceneOpts = pk.opts;
+        }
         if (!m.scene) m.scene = 'terminal';
         if (!m.story) m.story = '';
         if (!m.lesson) m.lesson = '';

@@ -85,7 +85,8 @@
 
   /* 2. enseigne lumineuse branchée sur une variable */
   S.sign = function (ctx, o) {
-    var bytes = ctx.bytes(o.v) || U.utf8(o.text || ''), orig = U.utf8(o.text || '');
+    var vn = o.v || ctx.findVar(['arr', 'ptr', 'str']);
+    var bytes = ctx.bytes(vn) || U.utf8(o.text || ''), orig = U.utf8(o.text || '');
     var n = Math.min(bytes.length, 14), cw = Math.min(22, Math.floor(280 / Math.max(n, 1))), x0 = (W - n * cw) / 2;
     var body = r(0, 0, W, H, 'url(#night)') + stars(40, 11) + r(0, 150, W, 50, '#0c1222') + r(0, 150, W, 2, '#1e2a48');
     body += r(40, 96, 240, 54, '#2a1d2e') + r(48, 104, 70, 46, '#3a2840') + r(60, 112, 46, 38, '#ffd36b', 'opacity=".25"') + r(206, 112, 56, 38, '#120c18') + r(214, 120, 40, 30, '#3a2a10', 'opacity=".6"');
@@ -99,7 +100,7 @@
     if (bytes.length > n) body += t(x0 + n * cw + 2, 66, '…', 14, '#888');
     body += r(150, 84, 3, 12, '#555') + r(170, 84, 3, 12, '#555');
     if (ctx.win) body += t(160, 140, '★ OUVERT ! ★', 13, '#ffd36b', 'text-anchor="middle" filter="url(#glow)" class="s-bob"');
-    return svg(body) + cap('Enseigne = variable « ' + o.v + ' » en mémoire, une lettre par case');
+    return svg(body) + cap(vn ? 'Enseigne = variable « ' + vn + ' » en mémoire, une lettre par case' : 'Enseigne branchée sur une chaîne en mémoire, une lettre par case');
   };
 
   /* 3. fusée : compte à rebours lu dans la sortie */
@@ -119,7 +120,8 @@
 
   /* 4. mètre du tailleur : parcours d'une chaîne avec un indice */
   S.ruler = function (ctx, o) {
-    var s = ctx.bytes(o.v) || [], i = ctx.num(o.i);
+    var vn = o.v || ctx.findVar(['arr', 'ptr', 'str']), iname = o.i || ctx.findVar('int', 'i');
+    var s = ctx.bytes(vn) || [], i = ctx.num(iname);
     var outs = (ctx.out || '').split('\n').filter(Boolean);
     var n = Math.min(s.length, 22), cw = 13, x0 = 16;
     var body = r(0, 0, W, H, '#2a1f2b') + r(0, 140, W, 60, '#3d2a2a') + r(0, 140, W, 3, '#5a3d3a');
@@ -135,7 +137,7 @@
     }
     if (i !== null && i !== undefined && i >= 0 && i < 40) {
       var px = x0 + Math.min(i, 30) * cw + 6;
-      body += '<path d="M' + px + ',56 l-6,-10 h12z" fill="#2ef2d0" filter="url(#glow)"/>' + t(px, 40, o.i + ' = ' + i, 9, '#2ef2d0', 'text-anchor="middle"');
+      body += '<path d="M' + px + ',56 l-6,-10 h12z" fill="#2ef2d0" filter="url(#glow)"/>' + t(px, 40, (iname || 'i') + ' = ' + i, 9, '#2ef2d0', 'text-anchor="middle"');
     }
     body += '<g class="s-bob">' + r(250, 96, 20, 20, '#f2c29b') + r(246, 90, 28, 8, '#555') + r(255, 104, 3, 3, '#222') + r(262, 104, 3, 3, '#222') + r(244, 116, 32, 28, '#8a5cff') + r(270, 120, 16, 4, '#ffe7a8') + '</g>';
     outs.slice(-4).forEach(function (L, q) { body += r(16 + q * 56, 160, 50, 22, '#fff', 'rx="3"') + t(41 + q * 56, 175, L.slice(0, 7) + ' cm', 9, '#333', 'text-anchor="middle"'); });
@@ -159,7 +161,7 @@
 
   /* 6. coffre-fort : une chaîne qu'on inverse avec deux indices */
   S.vault = function (ctx, o) {
-    var s = ctx.bytes(o.v) || [], i = ctx.num(o.i || 'i'), j = ctx.num(o.j || 'j');
+    var s = ctx.bytes(o.v || ctx.findVar(['arr', 'ptr', 'str'])) || [], i = ctx.num(o.i || 'i'), j = ctx.num(o.j || 'j');
     var n = Math.min(s.length, 16), cw = 16, x0 = (W - n * cw) / 2;
     var open = ctx.win;
     var body = r(0, 0, W, H, '#151a24') + r(0, 160, W, 40, '#0f131b');
@@ -230,7 +232,9 @@
 
   /* 10. train : liste chaînée suivie dans la mémoire */
   S.train = function (ctx, o) {
-    var nodes = ctx.list ? ctx.list(o.head, o.valOff || 0, o.nextOff || 8) : [];
+    var head = o.head || ctx.findVar('ptr', 'head');
+    var nodes = head && ctx.list ? ctx.list(head, o.valOff || 0, o.nextOff || 8) : [];
+    o = { head: head || 'tete', title: o.title, cap: o.cap, valOff: o.valOff, nextOff: o.nextOff };
     var body = r(0, 0, W, H, 'url(#sky)') + stars(25, 4) + city(140, '#0f1830') + r(0, 160, W, 40, '#2a2a30') + r(0, 166, W, 3, '#777') + r(0, 176, W, 3, '#777');
     for (var k = 0; k < 20; k++) body += r(k * 18, 168, 10, 10, '#4a3a2a');
     var x = 10;
@@ -278,7 +282,7 @@
 
   /* 13. videur : comparaison et saut */
   S.bouncer = function (ctx, o) {
-    var age = ctx.num(o.v || 'age'), out = (ctx.out || '').trim();
+    var age = ctx.num(o.v || ctx.findVar('int', 'i') || 'age'), out = (ctx.out || '').trim();
     var body = r(0, 0, W, H, 'url(#night)') + stars(30, 8) + r(150, 30, 160, 140, '#2a1640') + t(230, 60, 'CLUB 42', 16, '#ff6fb5', 'text-anchor="middle" filter="url(#glow)" class="s-flick"') + r(200, 90, 60, 80, '#120a1c') + ground(170, '#1a1426', '#2a2040');
     body += '<g class="s-bob">' + r(266, 100, 24, 24, '#c98a5b') + r(266, 96, 24, 6, '#111') + r(270, 108, 16, 4, '#111') + r(262, 124, 32, 36, '#111') + t(278, 146, 'STAFF', 6, '#ff6fb5', 'text-anchor="middle"') + '</g>';
     body += student(60, 124, '#3ddc84');
@@ -289,7 +293,8 @@
 
   /* 14. dictionnaire / barres */
   S.bars = function (ctx, o) {
-    var d = ctx.pyv ? ctx.pyv(o.v) : null, keys = [], vals = [];
+    var vn = o.v || ctx.findVar(['dict', 'list']);
+    var d = ctx.pyv ? ctx.pyv(vn) : null, keys = [], vals = [];
     if (d && d.k === 'dict') { keys = d.keys; vals = d.vals.map(function (x) { return x.v || 0; }); }
     else if (d && d.k === 'list') { vals = d.items.map(function (x) { return x.v || 0; }); keys = vals.map(function (v, i) { return String(i); }); }
     var body = r(0, 0, W, H, '#14202a') + t(16, 26, o.title || 'COMPTEUR', 14, '#ffd36b') + r(16, 170, 288, 2, '#3a4a5a');
@@ -299,12 +304,15 @@
       body += r(x, 170 - h, bw, h, ['#4aa3ff', '#3ddc84', '#ffcc4d', '#ff6fb5', '#b48cff', '#ff9f43'][i % 6], 'rx="2"') + t(x + bw / 2, 166 - h, String(vals[i]), 8, '#fff', 'text-anchor="middle"') + t(x + bw / 2, 184, keys[i].slice(0, 4), 9, '#cde', 'text-anchor="middle" font-family="JetBrains Mono, monospace"');
     }
     if (!n) body += t(160, 110, 'en attente de données…', 10, '#789', 'text-anchor="middle"');
-    return svg(body) + cap(o.cap || 'Les barres lisent la variable « ' + o.v + ' » en direct');
+    return svg(body) + cap(o.cap || (vn ? 'Les barres lisent la variable « ' + vn + ' » en direct' : 'Les barres lisent une liste ou un dictionnaire en direct'));
   };
 
   /* 15. jumeaux : deux noms, un ou deux objets (alias Python) */
   S.twins = function (ctx, o) {
-    var a = ctx.pyv ? ctx.pyv(o.a) : null, b = ctx.pyv ? ctx.pyv(o.b) : null, same = ctx.same ? ctx.same(o.a, o.b) : false;
+    var an = o.a, bn = o.b;
+    if (!an || !bn) { var pair = ctx.findVars(['list', 'dict'], 2); an = an || pair[0]; bn = bn || pair[1]; }
+    o = { a: an || 'a', b: bn || 'b' };
+    var a = an && ctx.pyv ? ctx.pyv(an) : null, b = bn && ctx.pyv ? ctx.pyv(bn) : null, same = an && bn && ctx.same ? ctx.same(an, bn) : false;
     var body = r(0, 0, W, H, '#1a1f2e') + t(16, 26, 'LA BOÎTE À JOUETS', 14, '#ffd36b');
     function box(x, y, l, col) {
       var s = r(x, y, 120, 50, col, 'rx="6"');
@@ -348,6 +356,80 @@
     body += t(16, 44, depth + ' valeur(s) empilée(s)', 9, '#9ab');
     if (ctx.out) body += bubble(220, 50, 90, vis(ctx.out).slice(-30), ctx.win ? '#c8ffdf' : '#fff', 'left');
     return svg(body) + cap('push pose une assiette, pop reprend celle du dessus (LIFO)');
+  };
+
+  /* 18. COBOL : salle des machines — la WORKING-STORAGE devient un registre bancaire live */
+  S.cobol = function (ctx, o) {
+    var fields = [];
+    try { var rg = ctx.m && ctx.m.view().regions[0]; if (rg && rg.groups && rg.groups[0]) fields = rg.groups[0].objs || []; } catch (e) { }
+    var outL = (ctx.out || '').split('\n'); if (outL.length && outL[outL.length - 1] === '') outL.pop();
+    var last = outL[outL.length - 1] || '';
+    var running = ctx.step > 0 && !ctx.done, win = ctx.win;
+    var body = r(0, 0, W, H, '#1a2130') + r(0, 174, W, 26, '#12161f');
+    body += r(0, 0, W, 22, '#243b2e') + r(0, 22, W, 2, '#3ddc84') + t(8, 15, 'CENTRE DE CALCUL · 42', 10, '#bfe9c8');
+    body += r(10, 32, 104, 134, '#2b3545', 'rx="5"') + r(16, 38, 92, 40, '#121823', 'rx="3"');
+    [40, 84].forEach(function (cx) {
+      body += '<circle cx="' + cx + '" cy="58" r="15" fill="#0c111a" stroke="#4a566c" stroke-width="3"/>' +
+        '<g class="' + (running ? 's-spin' : '') + '"><circle cx="' + cx + '" cy="58" r="3.5" fill="#8fe3b4"/>' +
+        r(cx - 1.5, 46, 3, 8, '#5f6b82') + r(cx - 1.5, 62, 3, 8, '#5f6b82') + r(cx - 12, 56.5, 8, 3, '#5f6b82') + r(cx + 4, 56.5, 8, 3, '#5f6b82') + '</g>';
+    });
+    body += r(16, 86, 92, 30, '#05140c', 'rx="3"') + t(20, 104, (last ? '> ' + vis(last) : '> _').slice(0, 15), 9, '#6cf0a0', 'font-family="JetBrains Mono, monospace"');
+    for (var k = 0; k < 6; k++) body += '<rect x="' + (18 + k * 15) + '" y="124" width="8" height="8" rx="2" fill="' + ['#ff5c7a', '#ffcc4d', '#3ddc84'][k % 3] + '"' + (running && k % 2 ? ' class="s-flick"' : '') + '/>';
+    body += t(20, 150, 'MF-42', 8, '#8aa');
+    body += r(124, 30, 188, 138, '#f3ead3', 'rx="4"') + r(124, 30, 188, 18, '#d9c9a0', 'rx="4"') + t(132, 43, 'WORKING-STORAGE', 10, '#4a3b1e', 'font-weight="700"');
+    if (!fields.length) body += t(132, 72, 'Aucune donnée déclarée', 9, '#9a876a', 'font-family="JetBrains Mono, monospace"');
+    fields.slice(0, 6).forEach(function (f, i) {
+      var y = 54 + i * 19, val = (f.cells || []).map(function (c) { return c.val === ' ' ? '·' : c.val; }).join('').slice(0, 12);
+      var numeric = /9|Z|\$|V/.test(f.type || '');
+      body += t(132, y + 11, (f.name || '').slice(0, 9), 9, '#3a2e18', 'font-family="JetBrains Mono, monospace" font-weight="700"');
+      body += r(200, y, 104, 15, '#fff', 'rx="2" stroke="#c9b88e"') + t(206, y + 11, val || '—', 10, numeric ? '#b06a12' : '#1d6a4a', 'font-family="JetBrains Mono, monospace"');
+    });
+    if (fields.length > 6) body += t(132, 165, '…+' + (fields.length - 6) + ' champ(s)', 7, '#9a876a');
+    if (win) body += '<g transform="rotate(-11 222 150)">' + r(176, 137, 92, 26, '#1d7a44', 'rx="4" opacity=".92"') + t(222, 155, '✓ VALIDÉ', 14, '#eafff2', 'text-anchor="middle" font-weight="700"') + '</g>';
+    return svg(body) + cap(o.cap || 'Chaque champ PIC de la WORKING-STORAGE, case par case, mis à jour en direct');
+  };
+
+  /* 19. CYBERSÉCURITÉ : la « cible » simulée, verrouillée puis compromise */
+  S.cyber = function (ctx, o) {
+    var sim = o.sim || 'logic', win = ctx.m ? !!ctx.m.ok : !!ctx.win;
+    var outL = (ctx.out || '').split('\n').filter(Boolean), running = ctx.step > 0;
+    var THEME = {
+      sqli: { ic: 'SQL', t: 'BASE DE DONNÉES', c: '#4aa3ff' }, cmdi: { ic: '>_', t: 'SERVEUR SHELL', c: '#3ddc84' },
+      pathtrav: { ic: 'DIR', t: 'SERVEUR DE FICHIERS', c: '#ffcc4d' }, logic: { ic: 'ID', t: 'CONTRÔLE D’ACCÈS', c: '#b48cff' },
+      overflow: { ic: 'BUF', t: 'MÉMOIRE TAMPON', c: '#ff9f43' }, formatstr: { ic: '%x', t: 'FUITE MÉMOIRE', c: '#ff9f43' },
+      token: { ic: 'JWT', t: 'JETON DE SESSION', c: '#ffd36b' }, xss: { ic: 'DOM', t: 'NAVIGATEUR', c: '#4aa3ff' },
+      crypto: { ic: 'KEY', t: 'MESSAGE CHIFFRÉ', c: '#2ef2d0' }
+    };
+    var th = THEME[sim] || THEME.logic;
+    var body = r(0, 0, W, H, 'url(#night)') + stars(26, 13);
+    body += t(10, 20, 'CIBLE · ' + th.t, 11, th.c, 'filter="url(#glow)"');
+    var bx = 96, by = 38;
+    body += r(bx, by, 104, 102, '#121a28', 'rx="6" stroke="' + (win ? '#3ddc84' : '#2a3850') + '" stroke-width="3"');
+    if (running && !win) body += '<rect x="' + (bx + 4) + '" y="' + (by + 6) + '" width="96" height="3" fill="' + th.c + '" opacity=".55" class="s-scan"/>';
+    body += t(bx + 52, by + 58, win ? '🔓' : '🔒', 36, '#fff', 'text-anchor="middle"' + (win ? ' class="s-bob"' : ''));
+    body += t(bx + 52, by + 88, th.ic, 15, th.c, 'text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700"');
+    if (win) body += r(bx - 2, 146, 108, 22, '#1d7a44', 'rx="4"') + t(bx + 52, 161, '🚩 COMPROMISE', 11, '#eafff2', 'text-anchor="middle" font-weight="700"');
+    else body += r(bx - 2, 146, 108, 22, '#3a1420', 'rx="4"') + t(bx + 52, 161, 'SÉCURISÉE', 10, '#ff7a98', 'text-anchor="middle"');
+    var cx = 218;
+    body += r(cx - 6, 38, 98, 120, '#05080e', 'rx="4" stroke="#1f2a40"') + r(cx - 6, 38, 98, 14, '#141c2c', 'rx="4"') + t(cx, 48, 'console', 8, '#8aa');
+    var logLines = wrap(outL.slice(-7).join('\n'), 15).slice(-8);
+    if (!logLines.length) logLines = ['en attente de', 'ta charge…'];
+    logLines.forEach(function (L, i) { body += t(cx, 62 + i * 12, L, 8, win ? '#9fe8c4' : '#9fb4d8', 'font-family="JetBrains Mono, monospace"'); });
+    return svg(body) + cap(o.cap || (win ? 'Cible compromise : objectif atteint. La défense (🛡) est expliquée dans la leçon.' : 'Cible simulée intacte : trouve la faille et envoie ta charge dans l’éditeur.'));
+  };
+
+  /* choix automatique d'une scène quand la mission n'en précise pas — pour que CHAQUE exercice ait un visuel */
+  var PICK = {
+    c: ['talk', 'sign', 'bouncer', 'ruler', 'mail', 'vault', 'bakery', 'tickets', 'conveyor', 'train'],
+    py: ['talk', 'ruler', 'rocket', 'mail', 'bars', 'bars', 'talk', 'twins', 'ruler', 'hanoi'],
+    asm: ['door', 'sign', 'calc', 'bouncer', 'rocket', 'plates', 'plates', 'sign', 'mail', 'bakery']
+  };
+  S.pick = function (m, dom) {
+    if (dom === 'cobol') return { scene: 'cobol' };
+    if (dom === 'cyber') return { scene: 'cyber', opts: { sim: (m.cyber && m.cyber.sim) || 'logic' } };
+    var arr = PICK[dom]; if (!arr) return { scene: 'terminal' };
+    var ch = Math.min(Math.max(m.ch || 1, 1), 10);
+    return { scene: arr[ch - 1] || 'terminal' };
   };
 
   /* scène générique : terminal */

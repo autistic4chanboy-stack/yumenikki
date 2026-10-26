@@ -356,6 +356,35 @@
       for (var i = 0; i < n; i++) { var v = m.peek(m.spTop - 8 * (i + 1), 8); var x = v === null ? 0 : Number(BigInt.asIntN(64, v)); out.push(x >= 32 && x < 127 ? "'" + String.fromCharCode(x) + "'" : String(x).slice(0, 10)); }
       return out;
     };
+    /* liste les noms de variables visibles (pour que les scènes trouvent leur sujet sans réglage manuel) */
+    ctx.names = function () {
+      if (!m) return [];
+      try {
+        if (lang === 'c') return m.liveVars().map(function (v) { return v.name; });
+        if (lang === 'py') { var out = []; if (m.globals && m.globals.vars) m.globals.vars.forEach(function (_, k) { out.push(k); }); (m.frames || []).forEach(function (f) { (f.order || []).forEach(function (n) { out.push(n); }); }); return out; }
+        if (lang === 'cobol') return Object.keys(m.prog.byName).filter(function (n) { var f = m.prog.byName[n]; return f && !f.children.length && !f.cond; });
+        if (lang === 'asm') return Object.keys(O42.engines.asm.REG);
+      } catch (e) { }
+      return [];
+    };
+    /* premier nom de variable dont le type correspond ; sinon, nom mémorisé en cache */
+    ctx.findVar = function (kinds, key) {
+      kinds = [].concat(kinds); key = key || ('v:' + kinds.join(','));
+      if (m) {
+        var ns = ctx.names();
+        for (var i = 0; i < ns.length; i++) { var v = null; try { v = m.peekVar(ns[i]); } catch (e) { } if (v && kinds.indexOf(v.k) >= 0) { cache[key] = ns[i]; return ns[i]; } }
+      }
+      return cache[key] || null;
+    };
+    ctx.findVars = function (kinds, n, key) {
+      kinds = [].concat(kinds); key = key || ('vs:' + kinds.join(','));
+      if (m) {
+        var ns = ctx.names(), got = [];
+        for (var i = 0; i < ns.length && got.length < n; i++) { var v = null; try { v = m.peekVar(ns[i]); } catch (e) { } if (v && kinds.indexOf(v.k) >= 0) got.push(ns[i]); }
+        if (got.length) { cache[key] = got; return got; }
+      }
+      return cache[key] || [];
+    };
     return ctx;
   }
 
