@@ -553,7 +553,7 @@
     // console
     term(m);
     // mémoire / cible / processeur
-    if (S.lang === 'cyber') { O42.CyberView.render(document.getElementById('mem'), m, ce); status(); buttons(); renderScene(); return; }
+    if (S.lang === 'cyber') { O42.CyberView.render(document.getElementById('mem'), m, ce, S.mode === 'missions' ? mission().cyber : null); status(); buttons(); renderScene(); return; }
     if (m) {
       if (!o.fast || !mem.t || performance.now() - mem.t > 120) { mem.render(m.view(), { lang: S.lang, scroll: o.scroll }); mem.t = performance.now(); }
       if (S.lang === 'asm') cpu.render(m, { anim: SPEEDS[S.speed].ms ? Math.min(SPEEDS[S.speed].ms * 0.8, 700) : 120, animate: !o.fast });
