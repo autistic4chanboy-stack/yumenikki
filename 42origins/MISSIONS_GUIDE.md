@@ -65,3 +65,45 @@ node 42origins/tests/realcheck.js <lang> <préfixe>     # ex. : node 42origins/t
 ```
 
 Pour chaque mission : la solution doit passer le juge, le code de départ échouer, et pour chaque test la sortie attendue doit être égale à celle du **vrai** programme (gcc, python3, nasm + ld) **et** à celle du visualiseur. Ne termine pas avant que ta commande affiche `0 en échec` pour tes missions. Si le visualiseur diffère du vrai programme, contourne-le dans la mission (n'édite pas les moteurs) et signale-le dans ton rapport final.
+
+---
+
+## Missions COBOL
+
+Domaine `cobol`, moteur `js/engine_cobol.js`. Les 10 **contrats finaux** (ids `cob1`…`cob10`) sont dans `js/missions_cobol.js` — **lis-les d'abord** pour le style et le niveau. Tu écris les ords 1 à 9 de chaque chapitre dans `js/missions_cobol_1.js` (chapitres 1-5, ids `cob1_1`…`cob5_9`) ou `js/missions_cobol_2.js` (chapitres 6-10, ids `cob6_1`…`cob10_9`). Format identique aux autres domaines (id, ch, ord, title, story, goal, lesson, starter, solution, hints, tests, rules, scene). Fichiers : `O42.missions.cobol = O42.missions.cobol || []; O42.missions.cobol.push(...)`.
+
+**⚠ Il n'y a pas de vrai compilateur COBOL ici : le moteur EST la référence.** Écris la solution, exécute-la mentalement, et surtout vérifie la sortie exacte avec la commande de vérification. Mets dans `expect` **exactement** ce que le moteur produit (y compris les zéros de tête des PIC 9 et les espaces des champs édités/alphanumériques).
+
+Astuces de rédaction COBOL :
+- Les programmes commencent par `IDENTIFICATION DIVISION.` + `PROGRAM-ID. NOM.` puis `DATA DIVISION. WORKING-STORAGE SECTION.` (si données) et `PROCEDURE DIVISION.`. Termine par `STOP RUN.`. Indente le code (7 espaces avant les niveaux 01, comme dans les finals).
+- `PIC 9(n)` = nombre (cadré à droite, zéros de tête inclus à l'affichage) ; `PIC X(n)` = texte (cadré à gauche, complété par des espaces) ; `V` = virgule implicite ; `S` = signé ; champs édités `$ Z , . -`. `VALUE` donne la valeur initiale.
+- Verbes gérés : `DISPLAY` (plusieurs éléments, littéraux et champs), `ACCEPT` (lit une ligne de stdin), `MOVE … TO …`, `ADD/SUBTRACT/MULTIPLY/DIVIDE … GIVING … REMAINDER …`, `COMPUTE`, `IF/ELSE/END-IF`, `EVALUATE … WHEN … END-EVALUATE`, `PERFORM` (paragraphe ; `n TIMES` ; `UNTIL` ; `VARYING … FROM … BY … UNTIL …` ; `… END-PERFORM`), paragraphes, `STRING … DELIMITED BY … INTO`, `INSPECT … REPLACING/TALLYING`, `INITIALIZE`, `OCCURS` + indices `T(I)`.
+- Commentaires : `*` en colonne 7 ou `*` en début de ligne (évite-les dans le code testé car la numérotation de colonnes libre peut varier).
+- Le code de départ doit s'exécuter mais donner une mauvaise sortie (laisse un `CONTINUE` ou une valeur fausse à compléter). `mustSrc`/`forbidSrc` empêchent de tricher ; pas de `noLeaks` (pas de tas en COBOL).
+- `scene` : garde `'terminal'` (le panneau de droite montre déjà la WORKING-STORAGE case par case).
+
+## Missions Cybersécurité
+
+Domaine `cyber`, moteur `js/engine_cyber.js`. **Tout est simulé et pédagogique** : on comprend une faille pour savoir la corriger ; aucun vrai système. Les 10 contrats finaux (`cyb1`…`cyb10`) sont dans `js/missions_cyber.js` — **lis-les**. Tu écris les ords 1 à 9 dans `js/missions_cyber_1.js` (ch 1-5, `cyb1_1`…`cyb5_9`) et `js/missions_cyber_2.js` (ch 6-10, `cyb6_1`…`cyb10_9`). `O42.missions.cyber.push(...)`.
+
+Une mission cyber a un champ **`cyber`** (la cible) en plus des champs habituels. L'éditeur contient la **charge** du joueur (`starter` = charge qui échoue, `solution` = charge qui réussit). `tests: [{}]` suffit (le juge vérifie que la solution compromet la cible, `m.ok === true`, et que le starter échoue). Pas de `expect`. `scene: 'terminal'`.
+
+Simulateurs disponibles (`cyber.sim`) et leur config (toutes les fonctions renvoient un objet NEUF à chaque appel) :
+- **`crypto`** : `{kind:'caesar', cipher:'...', plain:'...'}` (le joueur écrit le texte clair) · `{kind:'xor', cipherHex:'..'}` (le joueur écrit la clé ; le clair doit contenir `flag{`) · `{kind:'hash', hash:'h...', algo:'...'}` (le joueur écrit le mot de passe ; hash via `O42.cyber.toyHash`).
+- **`sqli`** : `{field, fixed:{...}, db:function(){return {table:{cols:[...],rows:[{...}]}}}, query:function(vals){return "SELECT ..."}, success:function(rows){return ...}}`. Le joueur écrit `field: payload`. Le moteur a un mini-SQL (SELECT/WHERE/AND/OR/LIKE/UNION, commentaires `--` `#`).
+- **`cmdi`** : `{field, template:'...', build:function(inj){return 'cmd '+inj}, fs:function(){return {'flag.txt':{content:'FLAG=flag{..}',secret:true}}}, success:function(out){...}}`. Shell jouet : echo, whoami, id, ls, cat, pwd, ping ; séparateurs `; && || |`.
+- **`pathtrav`** : `{field, base:'/var/www/html/', fs:function(){return {'/chemin':{content:'..',secret:true}}}, success:function(path,content){...}}`. Le joueur écrit `file: ../../etc/passwd`.
+- **`logic`** : `{state:function(){return {...}}, panel:function(st,req){return {title,html}}, check:function(st,req,c){return {ok:true,msg,win} | {fail:'...'}}, defense:'...', flag}`. Logique/IDOR sur mesure, requête en `clé: valeur`.
+- **`overflow`** : `{buf:16, afterLen:1|4, afterInit:0, varName, afterName, success:function(after){return after!==0}}`. Mémoire affichée case par case ; le joueur tape une entrée qui déborde.
+- **`formatstr`** : `{stack:['..','SECRET=flag{..}','..'], secret}`. Le joueur utilise `%x`/`%s` pour fuiter.
+- **`token`** : JWT jouet. `{secret?}`. Le joueur colle un jeton `header.payload.sig`. Gagne si `alg:none` (ou signature valide avec le secret) ET `role:admin`.
+- **`xss`** : `{template:'...{{input}}...', cookie:'SESSION=flag{..}'}`. Le joueur injecte un script qui lit `document.cookie`.
+
+Progression : ord 1 très guidé (payload presque donné dans la leçon), ord 9 proche du final. Varie les scénarios (différentes tables, fichiers, formulaires). Garde un ton pédagogique, toujours avec la **défense** (🛡) dans la leçon. `forbidSrc` empêche d'écrire en dur le secret au lieu de l'exploiter.
+
+**Vérification (COBOL et Cyber)** :
+```bash
+node 42origins/tests/realcheck.js cobol cob1_ cob2_ ...   # ou : node 42origins/tests/realcheck.js cobol
+node 42origins/tests/realcheck.js cyber cyb1_ cyb2_ ...
+```
+Pour chaque mission : la solution est acceptée, le code/charge de départ est refusé, et (cyber) la cible est bien compromise. Ne termine pas avant `0 en échec`. Lance aussi `node --check` sur ton fichier.

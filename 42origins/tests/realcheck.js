@@ -6,9 +6,10 @@
 'use strict';
 var fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
 var L = require('./load.js');
-var O = L(['util.js', 'engine_c.js', 'engine_py.js', 'engine_asm.js', 'missions_c.js', 'missions_py.js', 'missions_asm.js']
-  .concat(fs.readdirSync(path.join(__dirname, '..', 'js')).filter(function (f) { return /^missions_(c|py|asm)_\d+\.js$/.test(f); }).sort())
-  .concat(['judge.js']));
+var O = L(['util.js', 'engine_c.js', 'engine_py.js', 'engine_asm.js', 'engine_cobol.js', 'engine_cyber.js', 'profile.js', 'missions_c.js', 'missions_py.js', 'missions_asm.js', 'missions_cobol.js', 'missions_cyber.js']
+  .concat(fs.readdirSync(path.join(__dirname, '..', 'js')).filter(function (f) { return /^missions_(c|py|asm|cobol|cyber)_\d+\.js$/.test(f); }).sort())
+  .concat(['chapters.js', 'judge.js']));
+if (O.finalizeMissions) O.finalizeMissions();
 var GNL = '#include <stdlib.h>\n#include <unistd.h>\nchar *get_next_line(int fd){char c;int n=0,cap=64;char *l=malloc(cap);while(read(fd,&c,1)==1){if(n+2>cap){cap*=2;char*t=malloc(cap);for(int i=0;i<n;i++)t[i]=l[i];free(l);l=t;}l[n++]=c;if(c==10)break;}if(!n){free(l);return 0;}l[n]=0;return l;}\n';
 var DEFAULT_FILE = 'Bonjour depuis un fichier !\nDeuxième ligne.\n';
 var tmp = fs.mkdtempSync(path.join(os.tmpdir(), '42o-'));
@@ -16,6 +17,7 @@ var langs = process.argv[2] ? [process.argv[2]] : ['c', 'py', 'asm'], only = pro
 var bad = 0, good = 0;
 
 function build(lang, mi, src) {
+  if (lang === 'cobol' || lang === 'cyber') return { skip: true };
   var dir = path.join(tmp, mi.id); fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'texte.txt'), (mi.files && mi.files['texte.txt']) || DEFAULT_FILE);
   try {
@@ -38,10 +40,10 @@ function runReal(b, stdin) {
   return { out: r.stdout ? r.stdout.toString('utf8') : '', code: r.status };
 }
 function runEngine(lang, src, stdin, mi, poke) {
-  var m = O.engines[lang].create(src, { stdin: stdin || '', files: mi.files || { 'texte.txt': DEFAULT_FILE }, poke: poke, maxSteps: 300000 });
+  var m = O.engines[lang].create(src, { stdin: stdin || '', cyber: mi.cyber, files: mi.files || { 'texte.txt': DEFAULT_FILE }, poke: poke, maxSteps: 300000 });
   if (m.compileError) return { err: 'compilation : ' + m.compileError.msg + ' (ligne ' + m.compileError.line + ')' };
   while (!m.done) m.step();
-  return { out: m.stdout, code: m.exitCode, error: m.error };
+  return { out: m.stdout, code: m.exitCode, error: m.error, ok: m.ok };
 }
 langs.forEach(function (lang) {
   O.missions[lang].forEach(function (mi) {
@@ -57,7 +59,8 @@ langs.forEach(function (lang) {
       var e = runEngine(lang, mi.solution, stdin, mi, t.poke);
       if (e.err) { probs.push('test ' + (i + 1) + ' visualiseur : ' + e.err); return; }
       if (e.error) probs.push('test ' + (i + 1) + ' visualiseur plante : ' + e.error.msg + ' ligne ' + e.error.line);
-      if (b.err || t.poke) return;
+      if (lang === 'cyber' && !e.ok) probs.push('test ' + (i + 1) + ' : la cible n’est pas compromise par la solution.');
+      if (b.skip || b.err || t.poke) return;
       var r = runReal(b, stdin);
       if (t.expect !== undefined && r.out !== t.expect) probs.push('test ' + (i + 1) + ' : expect ' + JSON.stringify(t.expect).slice(0, 160) + ' ≠ vrai programme ' + JSON.stringify(r.out).slice(0, 160));
       if (t.exit !== undefined && r.code !== t.exit) probs.push('test ' + (i + 1) + ' : exit attendu ' + t.exit + ' ≠ vrai ' + r.code);
