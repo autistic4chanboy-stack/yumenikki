@@ -33,7 +33,7 @@
     bps: new Set(), lastLine: 0, compileErr: null,
     speed: store.get('speed', 3), live: store.get('live', false),
     progress: store.get('progress', {}), unlocked: store.get('unlocked', false),
-    hintsShown: {}, results: null, won: {}, sceneCache: {}, fails: {}
+    hintsShown: {}, results: null, won: {}, sceneCache: {}, fails: {}, openCh: {}
   };
 
   /* ---------------------------------------------------------------- éléments */
@@ -41,6 +41,7 @@
   var el = {};
 
   function init() {
+    if (O42.finalizeMissions) O42.finalizeMissions();
     ['side', 'term', 'explain', 'status', 'stdin', 'file-txt', 'next-line', 'exit-badge', 'compile-msg', 'dirty', 'cpu', 'speed', 'speed-val', 'file-name', 'live', 'xp', 'toast', 'modal'].forEach(function (id) { el[id] = document.getElementById(id); });
     ed = new O42.Editor(document.getElementById('editor'), { onChange: onCode, onGutter: toggleBp });
     mem = new O42.MemView(document.getElementById('mem'));
@@ -56,6 +57,7 @@
     $('#btn-out').addEventListener('click', function () { act(stepOut); });
     $('#btn-back').addEventListener('click', function () { act(stepBack); });
     $('#btn-restart').addEventListener('click', function () { pause(); restart(); });
+    $('#btn-validate').addEventListener('click', validate);
     $('#btn-replay').addEventListener('click', function () { replay(); });
     $('#btn-fresh').addEventListener('click', function () { pause(); restart(); });
     $('#btn-reset-code').addEventListener('click', function () { resetCode(false); });
@@ -150,8 +152,12 @@
     saveStdin();
     pause(); restart();
   }
-  function unlocked(lang, i) { return S.unlocked || i === 0 || !!S.progress[O42.missions[lang][i - 1].id] || !!S.progress[O42.missions[lang][i].id]; }
-  function firstTodo(lang) { var l = O42.missions[lang]; for (var i = 0; i < l.length; i++) if (!S.progress[l[i].id]) return i; return 0; }
+  function chapterOf(lang, k) { return O42.missions[lang].filter(function (m) { return m.ch === k; }); }
+  function doneIn(lang, k) { return chapterOf(lang, k).filter(function (m) { return S.progress[m.id]; }).length; }
+  /* un chapitre s'ouvre quand la moitié du précédent est réussie */
+  function chapterOpen(lang, k) { return S.unlocked || k === 1 || doneIn(lang, k - 1) >= 5 || doneIn(lang, k) > 0; }
+  function unlocked(lang, i) { var m = O42.missions[lang][i]; return !!m && chapterOpen(lang, m.ch); }
+  function firstTodo(lang) { var l = O42.missions[lang]; for (var i = 0; i < l.length; i++) if (!S.progress[l[i].id] && unlocked(lang, i)) return i; return 0; }
   function xp() {
     var n = 0, t = 0;
     ['c', 'py', 'asm'].forEach(function (l) { O42.missions[l].forEach(function (m) { t++; if (S.progress[m.id]) n++; }); });
@@ -163,37 +169,57 @@
   function side() {
     var h = '', L = S.lang;
     if (S.mode === 'missions' && S.view === 'list') {
-      var list = O42.missions[L], done = list.filter(function (m) { return S.progress[m.id]; }).length;
+      var list = O42.missions[L], done = list.filter(function (m) { return S.progress[m.id]; }).length, cur0 = firstTodo(L);
+      var openCh = S.openCh[L] || (list[cur0] ? list[cur0].ch : 1);
       h += '<div class="side-card"><div class="side-h"><h2>Missions ' + LANG[L].name + '</h2><div class="grow"></div><span class="count">' + done + ' / ' + list.length + '</span></div>' +
         '<div class="progress"><i style="width:' + (100 * done / list.length) + '%"></i></div>' +
-        '<p class="city">' + ({ c: 'Bienvenue à <b>42 Origins</b> ! Chaque contrat t’apprend une notion du C, de <code>write</code> aux listes chaînées. Clique un contrat pour commencer.', py: 'Python, version 42 Origins : variables, listes, dictionnaires, fonctions et récursion — avec la mémoire toujours visible.', asm: 'Descends au plus près du processeur : registres, drapeaux, pile, appels système… jusqu’à <code>ft_strdup</code> de libasm.' })[L] + '</p><div class="mlist">';
-      list.forEach(function (m, i) {
-        var ok = !!S.progress[m.id], lock = !unlocked(L, i), cur = !ok && !lock && i === firstTodo(L);
-        h += '<button class="mcard' + (ok ? ' done' : '') + (lock ? ' locked' : '') + (cur ? ' cur' : '') + '" data-i="' + i + '" type="button"' + (lock ? ' title="Termine le contrat précédent pour débloquer celui-ci"' : '') + '>' +
-          '<span class="num">' + (i + 1) + '</span><span><span class="t">' + U.esc(m.title) + '</span><br><span class="j">' + U.esc(m.job) + '</span> <span class="stars">' + stars(m.stars) + '</span></span>' +
-          '<span class="st">' + (ok ? '✅' : lock ? '🔒' : cur ? '▶' : '') + '</span></button>';
+        '<button class="continue" id="m-continue" type="button">▶ Continuer : <b>' + U.esc(list[cur0].title) + '</b><span>chapitre ' + list[cur0].ch + ' · mission ' + list[cur0].ord + '</span></button>' +
+        '<div class="chapters">';
+      O42.chapters[L].forEach(function (c, ci) {
+        var k = ci + 1, ms = [], dn = doneIn(L, k), open = chapterOpen(L, k);
+        list.forEach(function (m, i) { if (m.ch === k) ms.push(i); });
+        h += '<div class="chap' + (k === openCh ? ' open' : '') + (open ? '' : ' locked') + (dn === ms.length && ms.length ? ' full' : '') + '">' +
+          '<button class="chap-h" data-k="' + k + '" type="button"><span class="chap-n">' + k + '</span><span class="chap-t"><b>' + U.esc(c.t) + '</b><span>' + (open ? U.esc(c.d) : '🔒 réussis 5 missions du chapitre ' + (k - 1) + ' pour l’ouvrir') + '</span></span>' +
+          '<span class="chap-p"><i style="width:' + (ms.length ? 100 * dn / ms.length : 0) + '%"></i></span><span class="chap-c">' + dn + '/' + ms.length + '</span></button>';
+        if (k === openCh && open) {
+          h += '<div class="chap-b">';
+          ms.forEach(function (i) {
+            var m = list[i], ok = !!S.progress[m.id];
+            h += '<button class="mrow' + (ok ? ' done' : '') + (i === cur0 ? ' cur' : '') + (m.final ? ' final' : '') + '" data-i="' + i + '" type="button"><span class="mr-n">' + (ok ? '✓' : m.ord) + '</span><span class="mr-t">' + U.esc(m.title) + (m.final ? ' <em>contrat final</em>' : '') + '</span><span class="mr-s">' + stars(m.stars) + '</span></button>';
+          });
+          h += '</div>';
+        }
+        h += '</div>';
       });
       h += '</div>' + (S.unlocked ? '' : '<button class="unlock-all" type="button" id="unlock-all">Tout débloquer (mode enseignant)</button>') + '</div>';
       el.side.innerHTML = h;
-      $$('.mcard', el.side).forEach(function (b) { b.addEventListener('click', function () { if (!b.classList.contains('locked')) go(L, 'missions', +b.dataset.i); }); });
+      $$('.mrow', el.side).forEach(function (b) { b.addEventListener('click', function () { go(L, 'missions', +b.dataset.i); }); });
+      $$('.chap-h', el.side).forEach(function (b) { b.addEventListener('click', function () { var k = +b.dataset.k; S.openCh[L] = S.openCh[L] === k ? -1 : k; side(); }); });
+      $('#m-continue').addEventListener('click', function () { go(L, 'missions', cur0); });
       var ua = $('#unlock-all'); if (ua) ua.addEventListener('click', function () { S.unlocked = true; store.set('unlocked', true); side(); });
       return;
     }
     if (S.mode === 'missions') {
-      var m = mission(), shown = S.hintsShown[m.id] || 0, res = S.results;
-      h += '<div class="side-card mission"><div class="m-top"><button class="back" type="button" id="m-back">← Contrats</button><span class="m-job">' + U.esc(m.job) + '</span><div class="grow"></div><span class="stars" style="color:var(--warn)">' + stars(m.stars) + '</span></div>' +
-        '<h2 class="m-title">' + (S.progress[m.id] ? '✅ ' : '') + U.esc(m.title) + '</h2>' +
-        '<div class="scene" id="scene"></div>' +
-        '<p class="story">' + m.story + '</p>' +
-        '<div class="goal"><h4>🎯 OBJECTIF</h4>' + m.goal + '</div>' +
-        '<details class="lesson"' + (S.mid < 3 || !S.progress[m.id] ? ' open' : '') + '><summary>📘 Leçon : ce qu’il faut savoir</summary><div class="lesson-b">' + m.lesson + '</div></details>' +
+      var m = mission(), shown = S.hintsShown[m.id] || 0, res = S.results, all = O42.missions[L];
+      var prevOk = S.mid > 0 && unlocked(L, S.mid - 1), nextOk = S.mid < all.length - 1 && unlocked(L, S.mid + 1);
+      var chap = O42.chapters[L][m.ch - 1];
+      h += '<div class="side-card mission"><div class="m-top"><button class="back" type="button" id="m-back">← Chapitres</button>' +
+        '<div class="grow"></div>' +
+        '<span class="m-nav"><button type="button" id="m-prev"' + (prevOk ? '' : ' disabled') + ' title="Mission précédente">‹</button><b>' + m.ch + '.' + m.ord + '</b><button type="button" id="m-next2"' + (nextOk ? '' : ' disabled') + ' title="Mission suivante">›</button></span></div>' +
+        '<span class="m-job">Chapitre ' + m.ch + ' · ' + U.esc(chap ? chap.t : '') + (m.final ? ' · contrat final' : '') + '</span>' +
+        '<h2 class="m-title">' + (S.progress[m.id] ? '✅ ' : '') + U.esc(m.title) + ' <span class="stars">' + stars(m.stars) + '</span></h2>' +
+        (m.scene && m.scene !== 'terminal' ? '<div class="scene" id="scene"></div>' : '') +
+        (m.story ? '<p class="story">' + m.story + '</p>' : '') +
+        '<div class="goal"><h4>🎯 Objectif</h4>' + m.goal + '</div>' +
+        '<ol class="howto"><li>Lis l’objectif</li><li>Complète le code</li><li>Teste : <b>▶</b> ou <b>⤓</b></li><li>Clique <b>✅ Valider</b></li></ol>' +
+        (m.lesson ? '<details class="lesson"' + (m.ord === 1 || m.final ? ' open' : '') + '><summary>📘 Leçon</summary><div class="lesson-b">' + m.lesson + '</div></details>' : '') +
         '<div class="hints">' + m.hints.slice(0, shown).map(function (t, i) { return '<div class="hint"><b>Indice ' + (i + 1) + ' :</b> ' + U.esc(t) + '</div>'; }).join('') + '</div>' +
-        '<div class="m-actions"><button class="go" id="m-validate" type="button">✅ Valider le contrat</button>' +
-        (shown < m.hints.length ? '<button id="m-hint" type="button">💡 Indice (' + (shown + 1) + '/' + m.hints.length + ')</button>' : '') +
-        (shown >= m.hints.length || (S.fails[m.id] || 0) >= 2 || S.progress[m.id] ? '<button id="m-sol" type="button">👁 Voir une solution</button>' : '') + '</div>';
-      if (res) {
-        if (res.ok) h += '<div class="win-banner"><h3>★ Contrat rempli ! ★</h3><p>' + (S.mid < O42.missions[L].length - 1 ? 'Un nouveau contrat est disponible.' : 'Tu as terminé tous les contrats ' + LANG[L].name + ' ! 🎓') + '</p>' + (S.mid < O42.missions[L].length - 1 ? '<button id="m-next" type="button">Contrat suivant →</button>' : '') + '</div>';
-        h += '<div class="results">' + res.statics.map(function (s) { return '<div class="res ko">✖ ' + U.esc(s) + '</div>'; }).join('') + res.results.map(function (r) {
+        '<div class="m-actions"><button class="go" id="m-validate" type="button">✅ Valider la mission</button>' +
+        (shown < m.hints.length ? '<button id="m-hint" type="button">💡 Indice ' + (shown + 1) + '/' + m.hints.length + '</button>' : '') +
+        (shown >= m.hints.length || (S.fails[m.id] || 0) >= 2 || S.progress[m.id] ? '<button id="m-sol" type="button">👁 Solution</button>' : '') + '</div>';
+      if (res && !res.ok) {
+        var nOk = res.results.filter(function (r) { return r.ok; }).length;
+        h += '<div class="results"><div class="res-h">Pas encore : ' + nOk + ' test' + (nOk > 1 ? 's' : '') + ' réussi' + (nOk > 1 ? 's' : '') + ' sur ' + res.results.length + '</div>' + res.statics.map(function (s) { return '<div class="res ko">✖ ' + U.esc(s) + '</div>'; }).join('') + res.results.map(function (r) {
           var d = '';
           if (!r.ok && !r.skipped && r.expect !== undefined && r.got !== r.expect) d = '<div class="diff">' + (r.stdin ? '<span>entrée</span><code>' + U.esc(vis(r.stdin)) + '</code>' : '') + '<span>attendu</span><code>' + U.esc(vis(r.expect)) + '</code><span>obtenu</span><code>' + U.esc(vis(r.got)) + '</code></div>';
           return '<div class="res ' + (r.ok ? 'ok' : 'ko') + '">' + (r.ok ? '✔' : '✖') + ' <b>Test ' + r.n + '</b>' + (r.stdin && r.ok ? ' <span style="color:var(--dimmer)">(entrée ' + U.esc(vis(r.stdin).slice(0, 30)) + ')</span>' : '') + r.why.map(function (w) { return '<div class="why">' + U.esc(w) + '</div>'; }).join('') + d + '</div>';
@@ -201,7 +227,9 @@
       }
       h += '</div>';
       el.side.innerHTML = h;
-      $('#m-back').addEventListener('click', function () { go(L, 'missions'); });
+      $('#m-back').addEventListener('click', function () { S.openCh[L] = m.ch; go(L, 'missions'); });
+      $('#m-prev').addEventListener('click', function () { go(L, 'missions', S.mid - 1); });
+      $('#m-next2').addEventListener('click', function () { go(L, 'missions', S.mid + 1); });
       $('#m-validate').addEventListener('click', validate);
       var hb = $('#m-hint'); if (hb) hb.addEventListener('click', function () { S.hintsShown[m.id] = shown + 1; side(); renderScene(); });
       var sb = $('#m-sol'); if (sb) sb.addEventListener('click', function () {
@@ -209,7 +237,6 @@
           ed.set(m.solution, L); store.set(codeKey(), m.solution); pause(); restart();
         });
       });
-      var nb = $('#m-next'); if (nb) nb.addEventListener('click', function () { go(L, 'missions', S.mid + 1); });
       renderScene();
       return;
     }
@@ -525,6 +552,7 @@
     $('#btn-run').hidden = S.running;
     $('#btn-pause').hidden = !S.running;
     $('#btn-run span').textContent = m && m.steps > 0 && !m.done ? 'Continuer' : 'Exécuter';
+    $('#btn-validate').hidden = !(S.mode === 'missions' && S.view === 'mission');
     $('#btn-step').disabled = !can || (m && m.done);
     $('#btn-over').disabled = !can || (m && m.done);
     $('#btn-out').disabled = !can || (m && m.done);
@@ -541,6 +569,7 @@
     pause();
     var mi = mission(), btn = $('#m-validate');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Tests en cours…'; }
+    var tb = $('#btn-validate'); if (tb) tb.disabled = true;
     setTimeout(function () {
       var res = O42.judge(S.lang, mi, ed.value());
       S.results = res;
@@ -551,12 +580,13 @@
         store.set('progress', S.progress);
         xp();
         confetti();
-        toast(first ? '★ Contrat rempli : « ' + mi.title + ' » !' : '★ Toujours réussi !', 'good');
+        celebrate(mi, first, res);
       } else {
         S.fails[mi.id] = (S.fails[mi.id] || 0) + 1;
         var nOk = res.results.filter(function (r) { return r.ok; }).length;
-        toast('✖ ' + nOk + ' / ' + res.results.length + ' test(s) réussi(s) — regarde les détails', 'bad');
+        toast('Pas encore : ' + nOk + ' / ' + res.results.length + ' test(s) réussi(s). Regarde les détails à gauche.', 'bad');
       }
+      if (tb) tb.disabled = false;
       side();
       var r = $('.results'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 30);
@@ -584,6 +614,23 @@
     }
   }
   function modal(html) { el.modal.innerHTML = '<div class="modal-card">' + html + '</div>'; el.modal.hidden = false; }
+  /* fenêtre de réussite */
+  var CHEERS = ['Ton code passe tous les tests.', 'Mission accomplie, du premier coup d’œil au dernier octet.', 'Le campus te remercie !', 'Propre, net, efficace.', 'Encore une notion dans la poche.'];
+  function celebrate(mi, first, res) {
+    var L = S.lang, all = O42.missions[L], idx = all.indexOf(mi), next = idx + 1 < all.length ? idx + 1 : -1;
+    var k = mi.ch, chapDone = doneIn(L, k), chapN = chapterOf(L, k).length, total = all.filter(function (m) { return S.progress[m.id]; }).length;
+    var chapFull = chapDone === chapN;
+    var opened = k < 10 && chapDone === 5 && first;
+    var msg = chapFull && first ? 'Chapitre ' + k + ' terminé : « ' + U.esc(O42.chapters[L][k - 1].t) + ' » !' : CHEERS[(idx + total) % CHEERS.length];
+    modal('<div class="win-modal"><div class="win-badge"><span>★</span></div><h2>Bien joué !</h2>' +
+      '<p class="win-title">Mission <b>' + mi.ch + '.' + mi.ord + ' · ' + U.esc(mi.title) + '</b> réussie.</p><p class="win-msg">' + msg + '</p>' +
+      (opened ? '<p class="win-unlock">🔓 Le chapitre ' + (k + 1) + ' « ' + U.esc(O42.chapters[L][k].t) + ' » est maintenant ouvert.</p>' : '') +
+      '<div class="win-stats"><div><b>' + res.results.length + '/' + res.results.length + '</b><span>tests</span></div><div><b>' + chapDone + '/' + chapN + '</b><span>chapitre ' + k + '</span></div><div><b>' + total + '/' + all.length + '</b><span>missions ' + LANG[L].name + '</span></div></div>' +
+      '<div class="win-actions">' + (next >= 0 && unlocked(L, next) ? '<button type="button" class="go" id="win-next">Mission suivante →</button>' : '') + '<button type="button" class="close">Rester ici</button></div></div>');
+    var nb = $('#win-next');
+    if (nb) { nb.focus(); nb.addEventListener('click', function () { el.modal.hidden = true; go(L, 'missions', next); }); }
+  }
+
   /* confirmation dans la page (les fenêtres confirm() sont bloquées dans certains cadres) */
   function ask(msg, yes, fn) {
     modal('<h2 style="font-size:19px">Confirmer</h2><p>' + U.esc(msg) + '</p><div class="m-actions" style="justify-content:flex-end;margin-top:14px"><button type="button" class="close">Annuler</button><button type="button" class="go" id="ask-yes">' + U.esc(yes) + '</button></div>');
@@ -593,7 +640,7 @@
   function welcome() {
     modal('<button class="close" type="button">✕</button><h2>Bienvenue dans 42 Origins</h2>' +
       '<p>Un laboratoire pour <b>voir</b> ce que fait vraiment ton code : chaque variable, chaque case mémoire, la <b>pile</b> et le <b>tas</b>, les registres du <b>processeur</b>… ligne par ligne, à la vitesse que tu veux.</p>' +
-      '<p>Accepte des <b>contrats</b> (10 par langage, du plus simple au plus difficile) ou expérimente librement dans le <b>bac à sable</b>.</p>' +
+      '<p>Suis les <b>missions</b> (100 par langage, rangées en 10 chapitres, du plus simple au plus difficile) ou expérimente librement dans le <b>bac à sable</b>.<br>Dans chaque mission : lis l’objectif, complète le code, teste-le avec <b>▶ Exécuter</b> ou <b>⤓ Ligne suivante</b>, puis clique <b>✅ Valider</b>.</p>' +
       '<div class="welcome-langs"><button data-l="c" type="button"><b>C</b><span>write, pointeurs, malloc, get_next_line</span></button><button data-l="py" type="button"><b>Python</b><span>objets, listes, dictionnaires, récursion</span></button><button data-l="asm" type="button"><b>ASM</b><span>registres, pile, syscalls, libasm</span></button></div>' +
       '<p style="color:var(--dim);font-size:12.5px">Astuce : clique un numéro de ligne pour poser un <b>point d’arrêt</b>. Ta progression est sauvegardée dans ce navigateur.</p>');
     $$('.welcome-langs button', el.modal).forEach(function (b) { b.addEventListener('click', function () { closeModal(); go(b.dataset.l, 'missions'); }); });

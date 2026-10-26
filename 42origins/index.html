@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>42 Origins</title>
-<meta name="description" content="Visualiseur pas à pas de code C, Python et assembleur x86-64 : pile, tas, cases mémoire, registres du processeur, et 30 missions pour apprendre.">
+<meta name="description" content="Visualiseur pas à pas de code C, Python et assembleur x86-64 : pile, tas, cases mémoire, registres du processeur, et 300 missions pour apprendre.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap">
@@ -55,22 +55,24 @@
     </div>
 
     <div id="toolbar" class="toolbar">
-      <div class="tb-group">
-        <button id="btn-run" class="primary" type="button" title="Exécuter / continuer (F5 ou Ctrl+Entrée)">▶ <span>Exécuter</span></button>
-        <button id="btn-pause" type="button" title="Pause (Échap)" hidden>⏸ <span>Pause</span></button>
-        <button id="btn-step" type="button" title="Exécute la ligne verte, en entrant dans les fonctions (F10)">⤓ <span>Pas</span></button>
-        <button id="btn-over" type="button" title="Exécute la ligne verte sans entrer dans les fonctions (Maj+F10)">↷ <span>Par-dessus</span></button>
-        <button id="btn-out" type="button" title="Termine la fonction en cours (F8)">⤴ <span>Sortir</span></button>
-        <button id="btn-back" type="button" title="Revenir d’un pas (F9)">⤒ <span>Retour</span></button>
-        <button id="btn-restart" class="ghost" type="button" title="Recommencer depuis le début">⟲</button>
+      <div class="tb-main">
+        <button id="btn-run" class="primary" type="button" title="Exécute tout le programme à la vitesse choisie (F5)">▶ <span>Exécuter</span></button>
+        <button id="btn-pause" class="primary" type="button" title="Pause (Échap)" hidden>⏸ <span>Pause</span></button>
+        <button id="btn-step" class="step" type="button" title="Exécute seulement la ligne surlignée en vert (F10)">⤓ <span>Ligne suivante</span></button>
+        <button id="btn-restart" type="button" title="Recommence depuis le début">⟲ <span>Recommencer</span></button>
+        <button id="btn-validate" class="validate" type="button" title="Lance les tests de la mission" hidden>✅ <span>Valider</span></button>
       </div>
-      <div class="tb-speed">
-        <span class="lbl">🐢</span>
-        <input type="range" id="speed" min="0" max="8" step="1" value="3" aria-label="Vitesse d’exécution">
-        <span class="lbl">🐇</span>
-        <span id="speed-val" class="speed-val">2 pas/s</span>
+      <div class="tb-more">
+        <button id="btn-over" class="sm" type="button" title="Exécute un appel de fonction d’un seul coup (Maj+F10)">↷ Passer la fonction</button>
+        <button id="btn-out" class="sm" type="button" title="Termine la fonction en cours (F8)">⤴ Sortir</button>
+        <button id="btn-back" class="sm" type="button" title="Revient d’une ligne en arrière (F9)">⤒ Revenir</button>
+        <span class="tb-speed" title="Vitesse de « Exécuter »">
+          <span class="lbl">Vitesse</span>
+          <input type="range" id="speed" min="0" max="8" step="1" value="3" aria-label="Vitesse d’exécution">
+          <span id="speed-val" class="speed-val">4 pas/s</span>
+        </span>
+        <span id="status" class="status"></span>
       </div>
-      <div id="status" class="status"></div>
     </div>
 
     <div class="panel explain-panel">
@@ -132,6 +134,13 @@
 <script src="js/missions_c.js"></script>
 <script src="js/missions_py.js"></script>
 <script src="js/missions_asm.js"></script>
+<script src="js/missions_c_1.js"></script>
+<script src="js/missions_c_2.js"></script>
+<script src="js/missions_py_1.js"></script>
+<script src="js/missions_py_2.js"></script>
+<script src="js/missions_asm_1.js"></script>
+<script src="js/missions_asm_2.js"></script>
+<script src="js/chapters.js"></script>
 <script src="js/examples.js"></script>
 <script src="js/judge.js"></script>
 <script src="js/app.js"></script>

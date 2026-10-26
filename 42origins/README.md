@@ -7,7 +7,7 @@ Visualiseur pas à pas de code **C**, **Python** et **assembleur x86-64** (NASM,
 - **C** : pointeurs, tableaux, `struct`, `typedef`, `enum`, `static`, `malloc`/`calloc`/`realloc`/`free`, `write`/`read`/`open`/`close`, `get_next_line`, `printf`… Détection des segfaults, débordements (pile, tas, globales), use-after-free, double free, lectures non initialisées et fuites.
 - **Python** : sous-ensemble de Python 3 (sans classes) ; noms dans les cadres, objets sur le tas avec leur id et leur compteur de références (alias de listes visibles).
 - **Assembleur** : vue processeur en temps réel (pipeline fetch → decode → execute → write-back, RIP, ALU, drapeaux ZF/SF/CF/OF, 16 registres avec zoom rax/eax/ax/ah/al, bus mémoire), pile en tranches de 8 octets avec adresses de retour, syscalls `read`/`write`/`open`/`close`/`exit`, `call malloc`/`free`/`printf`.
-- **30 missions** (10 par langage), présentées comme des contrats de plus en plus difficiles, chacune avec une scène animée branchée sur la mémoire du programme, une leçon, des indices, des tests cachés et une solution.
+- **300 missions** (100 par langage, en 10 chapitres de 10), de plus en plus difficiles : objectif, leçon, indices, tests cachés, solution, et une scène animée branchée sur la mémoire pour les contrats finaux. Un chapitre s’ouvre quand la moitié du précédent est réussie ; chaque réussite affiche une fenêtre « Bien joué ! ».
 - **Écrire petit à petit** : mode *Direct* (réexécution à chaque frappe) ou *Rejouer jusqu’ici* après une modification en pause.
 
 ## Lancer
@@ -21,7 +21,8 @@ puis ouvrir http://localhost:8737/42origins/index.html (ou ouvrir `42origins/ind
 ## Tests
 
 ```bash
-node 42origins/tests/missions.js
+node 42origins/tests/missions.js      # juge : solutions acceptées, codes de départ refusés, exemples
+node 42origins/tests/realcheck.js     # compare chaque mission aux vrais gcc, python3 et nasm + ld
 ```
 
-Vérifie que les 30 solutions passent le juge, que les 30 codes de départ échouent, et que les exemples du bac à sable se comportent comme prévu (les exemples 🐞 doivent planter).
+`realcheck.js` vérifie, pour chaque test de chaque mission, que la sortie attendue est celle du vrai programme et que le visualiseur produit la même. Le guide de rédaction des missions est dans `MISSIONS_GUIDE.md`.
